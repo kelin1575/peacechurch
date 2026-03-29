@@ -10,6 +10,8 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
 const CATEGORIES = ["전체", "주일예배", "특별집회", "수요예배", "새벽기도"];
 const PAGE_SIZE = 20;
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "설교 말씀",
   description:
@@ -61,47 +63,53 @@ async function getSermons(searchParams: SearchParams) {
       ? { publishedAt: "asc" as const }
       : { publishedAt: "desc" as const };
 
-  try {
-    const where: Record<string, unknown> = {};
-    if (category && category !== "전체") where.category = category;
-    if (query) {
-      where.OR = [
-        { title: { contains: query } },
-        { summary: { contains: query } },
-        { scripture: { contains: query } },
-        { description: { contains: query } },
-      ];
-    }
-
-    const [sermons, total, categoryCounts] = await Promise.all([
-      prisma.sermon.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-        select: {
-          id: true,
-          youtubeId: true,
-          title: true,
-          scripture: true,
-          summary: true,
-          category: true,
-          publishedAt: true,
-          thumbnail: true,
-          views: true,
-        },
-      }),
-      prisma.sermon.count({ where }),
-      prisma.sermon.groupBy({
-        by: ["category"],
-        _count: { category: true },
-      }),
-    ]);
-
-    return { sermons, total, page, categoryCounts };
-  } catch {
-    return { sermons: [], total: 0, page: 1, categoryCounts: [] };
+  const where: Record<string, unknown> = {};
+  if (category && category !== "전체") where.category = category;
+  if (query) {
+    where.OR = [
+      { title: { contains: query } },
+      { summary: { contains: query } },
+      { scripture: { contains: query } },
+      { description: { contains: query } },
+    ];
   }
+
+  // 설교 목록 + 전체 개수 (이 쿼리는 반드시 성공해야 함)
+  const [sermons, total] = await Promise.all([
+    prisma.sermon.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        youtubeId: true,
+        title: true,
+        scripture: true,
+        summary: true,
+        category: true,
+        publishedAt: true,
+        thumbnail: true,
+        views: true,
+      },
+    }),
+    prisma.sermon.count({ where }),
+  ]);
+
+  // 카테고리별 개수 (실패해도 무방)
+  let countMap: Record<string, number> = {};
+  try {
+    const allCategories = await prisma.sermon.findMany({
+      select: { category: true },
+    });
+    for (const s of allCategories) {
+      countMap[s.category] = (countMap[s.category] || 0) + 1;
+    }
+  } catch {
+    // 실패 시 개수 표시 생략
+  }
+
+  return { sermons, total, page, countMap };
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string; icon: React.ReactNode }[] = [
@@ -116,16 +124,18 @@ export default async function SermonsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const { sermons, total, page, categoryCounts } = await getSermons(params);
+  let sermons: Awaited<ReturnType<typeof getSermons>>["sermons"] = [];
+  let total = 0, page = 1;
+  let countMap: Record<string, number> = {};
+  try {
+    ({ sermons, total, page, countMap } = await getSermons(params));
+  } catch (e) {
+    console.error("Sermons page DB error:", e);
+  }
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const activeCategory = params.category || "전체";
   const activeSort = (params.sort || "latest") as SortOption;
-
-  // 카테고리별 개수 맵
-  const countMap = Object.fromEntries(
-    categoryCounts.map((c) => [c.category, c._count.category])
-  );
-  const totalCount = Object.values(countMap).reduce((a, b) => a + b, 0);
+  const totalCount = Object.values(countMap).reduce((a: number, b: number) => a + b, 0);
 
   const breadcrumbs = [
     { name: "홈", url: BASE_URL },
