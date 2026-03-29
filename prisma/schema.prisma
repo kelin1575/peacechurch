@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Sermon {
+  id          String    @id @default(cuid())
+  youtubeId   String    @unique
+  title       String
+  description String?
+  thumbnail   String?
+  publishedAt DateTime
+  category    String    @default("주일예배")
+  summary     String?
+  interpretation String?
+  scripture   String?
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  comments    Comment[]
+
+  @@index([category])
+  @@index([publishedAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  sermonId  String
+  author    String
+  content   String
+  createdAt DateTime @default(now())
+
+  sermon    Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
+
+  @@index([sermonId])
+}
+
+model Devotional {
+  id          String   @id @default(cuid())
+  title       String
+  scripture   String
+  content     String
+  prayer      String?
+  date        DateTime @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+}
+
+model DonationInfo {
+  id          String   @id @default(cuid())
+  bankName    String
+  accountNumber String
+  accountHolder String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
