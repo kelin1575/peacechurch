@@ -1,57 +1,42 @@
+/**
+ * 설교 영상 yN9ccDzb3F8에 기반한 오늘의 묵상 등록 스크립트
+ * YouTube 영상: https://www.youtube.com/watch?v=yN9ccDzb3F8
+ */
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding database...");
-
-  // Sample sermons
-  await prisma.sermon.upsert({
-    where: { youtubeId: "sample-yt-1" },
-    update: {},
-    create: {
-      youtubeId: "sample-yt-1",
-      title: "주일예배 - 하나님의 은혜 (2024.03.10)",
-      description: "오늘 말씀: 요한복음 3:16",
-      thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
-      publishedAt: new Date("2024-03-10"),
-      category: "주일예배",
-      scripture: "요한복음 3:16",
-      summary: "하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니, 이는 그를 믿는 자마다 멸망하지 않고 영생을 얻게 하려 하심이라. 오늘 말씀은 하나님의 무한한 사랑과 그 사랑의 표현인 예수 그리스도에 대해 가르쳐 줍니다.",
-      interpretation: "요한복음 3:16은 성경 전체의 복음을 한 절에 담고 있습니다. '세상'은 하나님을 거역하는 모든 인류를 의미하며, '이처럼 사랑하사'는 십자가의 희생으로 나타난 하나님의 사랑의 깊이를 보여줍니다. 우리의 삶에서 이 사랑을 받아들이고, 이 사랑으로 다른 사람을 사랑하는 것이 그리스도인의 삶입니다.",
-    },
-  });
-
-  // 정재광 목사님 설교 영상 (2026-03-29) - yN9ccDzb3F8
-  await prisma.sermon.upsert({
+  // ——— 설교 등록 ———
+  const sermon = await prisma.sermon.upsert({
     where: { youtubeId: "yN9ccDzb3F8" },
     update: {},
     create: {
       youtubeId: "yN9ccDzb3F8",
-      title: "주일예배 설교 — 포도나무와 가지 (2026.03.29)",
-      description: "수원평안교회 정재광 목사님 주일 설교 | 요한복음 15:1-11",
+      title: "주일예배 설교 - 수원평안교회 정재광 목사",
+      description: "수원평안교회 정재광 목사님의 주일 설교 말씀",
       thumbnail: "https://i.ytimg.com/vi/yN9ccDzb3F8/mqdefault.jpg",
       publishedAt: new Date("2026-03-29"),
       category: "주일예배",
       scripture: "요한복음 15:1-11",
-      summary: `예수님께서 "나는 참 포도나무요 너희는 가지라"고 하신 말씀을 통해, 그리스도와의 연합이 신앙 생활의 가장 근본적인 진리임을 가르쳐 주십니다. 가지가 포도나무에 붙어 있어야만 열매를 맺을 수 있듯이, 우리도 오직 예수님 안에 거할 때에만 풍성한 영적 열매를 맺을 수 있습니다. 농부이신 아버지 하나님께서 가지를 다듬으시는 것처럼, 우리의 삶의 어려움과 연단도 더 풍성한 열매를 위한 하나님의 사랑임을 깨달아야 합니다.`,
-      interpretation: `요한복음 15장의 '포도나무 비유'는 예수님께서 십자가를 앞두고 다락방에서 제자들에게 주신 마지막 강화(요 13-17장, Upper Room Discourse) 가운데 핵심 말씀입니다.
+      summary: `포도나무와 가지의 비유를 통해 예수님과의 연합이 신앙 생활의 핵심임을 가르쳐 주십니다. 가지가 포도나무에 붙어 있어야 열매를 맺듯이, 우리도 예수님 안에 거해야 풍성한 삶을 살 수 있습니다.`,
+      interpretation: `요한복음 15장의 '포도나무 비유'는 예수님께서 십자가를 앞두고 제자들에게 주신 마지막 강화(Upper Room Discourse) 중 핵심 말씀입니다.
 
-**구속사적 의미**: 구약에서 이스라엘은 종종 하나님의 포도원에 심긴 포도나무로 묘사되었습니다(사 5:1-7; 겔 15장; 호 10:1). 그러나 이스라엘은 항상 실망스러운 열매를 맺는 실패한 포도나무였습니다. 예수님은 "나는 **참** 포도나무"(ἡ ἄμπελος ἡ ἀληθινή)라고 선언하시며, 이스라엘이 실패했던 사명을 완성하신 참된 이스라엘이심을 선언하십니다.
+신학적으로 이 본문은 '연합(Union with Christ)'의 교리를 가장 생생하게 표현합니다. 칼뱅은 이 연합을 "모든 구원의 유익의 근거"라고 설명했으며, 루터는 이것을 "신비적 연합(unio mystica)"이라 불렀습니다.
 
-**연합의 신학(Union with Christ)**: 칼뱅은 그리스도와의 연합을 "칭의와 성화, 모든 구원의 유익이 흘러나오는 원천"이라 설명했습니다. 이 연합은 단순한 감정적 친밀감이 아니라, 성령을 통한 생명적 연합입니다. 가지가 포도나무에서 수액을 공급받아 살아있듯, 우리의 영적 생명은 그리스도로부터 흘러옵니다.
+"내 안에 거하라"(μένετε ἐν ἐμοί)는 명령형으로, 이는 소극적인 머묾이 아니라 능동적인 신뢰와 의지를 요구합니다. 가지는 포도나무에서 영양을 받아야만 살 수 있듯, 우리의 영적 생명은 오직 그리스도에게서 흘러나옵니다.
 
-**가지치기(κάθαρσις)의 섭리**: 아버지 하나님께서 가지를 다듬으신다는 것은 우리의 삶에 찾아오는 고난과 훈련이 무의미한 것이 아님을 보여줍니다. 히브리서 12:11은 "무릇 징계가 당시에는 즐거워 보이지 않고 슬퍼 보이나 후에 그로 말미암아 연단 받은 자들은 의와 평강의 열매를 맺느니라"고 증언합니다.
-
-**기도와 말씀의 중요성**: "내 말이 너희 안에 거하면"(요 15:7)이라는 조건은 말씀 묵상과 기도가 그리스도와의 연합을 유지하는 구체적인 방편임을 가르칩니다. 이는 수동적인 신비주의가 아니라, 능동적이고 의도적인 영적 훈련을 요구합니다.`,
+"많은 열매를 맺어"(φέρητε καρπὸν πολύν)는 단순한 도덕적 업적이 아닌, 성령의 열매(갈 5:22-23)로서의 인격적 변화와 하나님 나라의 확장을 의미합니다. 농부이신 아버지께서 가지를 다듬으시는 것(가지치기, κάθαρσις)은 고난과 훈련을 통해 더 풍성한 열매를 맺게 하시려는 하나님의 섭리임을 보여줍니다.`,
     },
   });
 
-  // 오늘의 묵상 (2026-03-29) — 정재광 목사님 설교 yN9ccDzb3F8 기반
+  console.log("Sermon created:", sermon.id);
+
+  // ——— 오늘의 묵상 등록 (2026-03-29) ———
   const today = new Date("2026-03-29");
   today.setHours(0, 0, 0, 0);
 
-  await prisma.devotional.upsert({
+  const devotional = await prisma.devotional.upsert({
     where: { date: today },
     update: {
       title: "포도나무 안에 거하라 — 그리스도와의 연합",
@@ -162,27 +147,10 @@ C. S. 루이스는 이것을 이렇게 표현했습니다: "그리스도인이 �
     },
   });
 
-  // Yesterday's devotional
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  await prisma.devotional.upsert({
-    where: { date: yesterday },
-    update: {},
-    create: {
-      title: "구하라, 그리하면 받으리라",
-      scripture: "마태복음 7:7-8",
-      content: `예수님께서는 기도에 대해 명확하게 가르쳐 주셨습니다. "구하라 그리하면 너희에게 주실 것이요, 찾으라 그리하면 찾아낼 것이요, 문을 두드리라 그리하면 너희에게 열릴 것이니."
-
-이 말씀은 단순한 약속이 아닙니다. 이것은 하나님과 우리의 관계에 대한 선언입니다. 하나님은 우리의 기도를 들으시고, 때를 따라 가장 좋은 것으로 응답하십니다.
-
-기도는 우리의 욕구를 채우는 수단이 아니라, 하나님과의 친밀한 교제입니다. 구하는 행위 자체가 하나님에 대한 신뢰를 표현합니다.`,
-      prayer: `주님, 오늘도 기도로 주님 앞에 나아옵니다. 제 마음의 소원들을 주님께 아뢰며, 주님의 뜻이 이루어지기를 원합니다. 믿음으로 구하며, 믿음으로 기다리는 하루가 되게 하소서. 아멘.`,
-      date: yesterday,
-    },
-  });
-
-  console.log("Seeding completed!");
+  console.log("Devotional created:", devotional.id);
+  console.log("Title:", devotional.title);
+  console.log("Scripture:", devotional.scripture);
+  console.log("Date:", devotional.date);
 }
 
 main()
