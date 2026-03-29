@@ -19,6 +19,7 @@ model Sermon {
   thumbnail   String?
   publishedAt DateTime
   category    String    @default("주일예배")
+  minister    String?
   summary     String?
   interpretation String?
   scripture   String?

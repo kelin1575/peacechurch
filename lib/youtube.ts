@@ -7,9 +7,9 @@ export interface YouTubeVideo {
   description: string;
   thumbnail: string;
   publishedAt: string;
-  duration?: string;
 }
 
+/** 단일 페이지 fetch (기존 호환용) */
 export async function fetchChannelVideos(
   maxResults = 20,
   pageToken?: string
@@ -17,37 +17,63 @@ export async function fetchChannelVideos(
   if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === "YOUR_YOUTUBE_API_KEY_HERE") {
     return { videos: getMockVideos() };
   }
+  return fetchPage(maxResults, pageToken);
+}
 
+/** 채널의 모든 영상을 페이지네이션으로 가져옴 (최대 maxTotal개) */
+export async function fetchAllChannelVideos(
+  maxTotal = 1000
+): Promise<{ videos: YouTubeVideo[]; total: number }> {
+  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === "YOUR_YOUTUBE_API_KEY_HERE") {
+    const videos = getMockVideos();
+    return { videos, total: videos.length };
+  }
+
+  const all: YouTubeVideo[] = [];
+  let nextPageToken: string | undefined;
+
+  do {
+    const { videos, nextPageToken: token } = await fetchPage(50, nextPageToken);
+    all.push(...videos);
+    nextPageToken = token;
+  } while (nextPageToken && all.length < maxTotal);
+
+  return { videos: all, total: all.length };
+}
+
+async function fetchPage(
+  maxResults: number,
+  pageToken?: string
+): Promise<{ videos: YouTubeVideo[]; nextPageToken?: string }> {
   const params = new URLSearchParams({
     part: "snippet",
     channelId: CHANNEL_ID,
-    maxResults: maxResults.toString(),
+    maxResults: String(Math.min(maxResults, 50)),
     order: "date",
     type: "video",
-    key: YOUTUBE_API_KEY,
+    key: YOUTUBE_API_KEY!,
   });
+  if (pageToken) params.append("pageToken", pageToken);
 
-  if (pageToken) {
-    params.append("pageToken", pageToken);
-  }
-
-  const response = await fetch(
+  const res = await fetch(
     `https://www.googleapis.com/youtube/v3/search?${params}`,
-    { next: { revalidate: 3600 } }
+    { next: { revalidate: 0 } }
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch YouTube videos");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const reason = err?.error?.errors?.[0]?.reason || res.status;
+    throw new Error(`YouTube API error: ${reason}`);
   }
 
-  const data = await response.json();
+  const data = await res.json();
 
-  const videos: YouTubeVideo[] = data.items.map((item: {
+  const videos: YouTubeVideo[] = (data.items ?? []).map((item: {
     id: { videoId: string };
     snippet: {
       title: string;
       description: string;
-      thumbnails: { medium: { url: string }; high: { url: string } };
+      thumbnails: { medium?: { url: string }; high?: { url: string } };
       publishedAt: string;
     };
   }) => ({
@@ -61,55 +87,31 @@ export async function fetchChannelVideos(
     publishedAt: item.snippet.publishedAt,
   }));
 
-  return {
-    videos,
-    nextPageToken: data.nextPageToken,
-  };
+  return { videos, nextPageToken: data.nextPageToken };
 }
 
 function getMockVideos(): YouTubeVideo[] {
   return [
     {
       id: "dQw4w9WgXcQ",
-      title: "주일예배 - 하나님의 은혜 (2024.03.10)",
-      description: "오늘 말씀: 요한복음 3:16 - 하나님이 세상을 이처럼 사랑하사...",
+      title: "2024.03.10 주일2부예배 수원평안교회 하나님의 은혜 정재광목사",
+      description: "오늘 말씀: 요한복음 3:16",
       thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
       publishedAt: "2024-03-10T09:00:00Z",
     },
     {
       id: "9bZkp7q19f0",
-      title: "주일예배 - 믿음으로 사는 삶 (2024.03.03)",
-      description: "오늘 말씀: 히브리서 11:1 - 믿음은 바라는 것들의 실상이요...",
+      title: "2024.03.03 수요예배 수원평안교회 믿음으로 사는 삶 정재광목사",
+      description: "오늘 말씀: 히브리서 11:1",
       thumbnail: "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg",
       publishedAt: "2024-03-03T09:00:00Z",
     },
     {
       id: "kJQP7kiw5Fk",
-      title: "주일예배 - 성령의 역사 (2024.02.25)",
-      description: "오늘 말씀: 사도행전 2:1-4 - 오순절 날이 이미 이르매...",
+      title: "2024.02.25 주일1부예배 수원평안교회 성령의 역사 이름전도사",
+      description: "오늘 말씀: 사도행전 2:1-4",
       thumbnail: "https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg",
       publishedAt: "2024-02-25T09:00:00Z",
-    },
-    {
-      id: "3tmd-ClpJxA",
-      title: "주일예배 - 기도의 능력 (2024.02.18)",
-      description: "오늘 말씀: 마태복음 7:7-8 - 구하라 그리하면 너희에게 주실 것이요...",
-      thumbnail: "https://i.ytimg.com/vi/3tmd-ClpJxA/mqdefault.jpg",
-      publishedAt: "2024-02-18T09:00:00Z",
-    },
-    {
-      id: "QH2-TGUlwu4",
-      title: "주일예배 - 하나님을 찾는 자 (2024.02.11)",
-      description: "오늘 말씀: 시편 27:4 - 내가 여호와께 바라는 한 가지 일 그것을 구하리니...",
-      thumbnail: "https://i.ytimg.com/vi/QH2-TGUlwu4/mqdefault.jpg",
-      publishedAt: "2024-02-11T09:00:00Z",
-    },
-    {
-      id: "e-ORhEE9VVg",
-      title: "주일예배 - 부활의 소망 (2024.02.04)",
-      description: "오늘 말씀: 고린도전서 15:20 - 그리스도께서 죽은 자 가운데서 다시 살아나사...",
-      thumbnail: "https://i.ytimg.com/vi/e-ORhEE9VVg/mqdefault.jpg",
-      publishedAt: "2024-02-04T09:00:00Z",
     },
   ];
 }

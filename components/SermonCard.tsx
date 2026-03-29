@@ -10,6 +10,7 @@ interface SermonCardProps {
   scripture?: string | null;
   summary?: string | null;
   category: string;
+  minister?: string | null;
   publishedAt: Date | string;
   thumbnail?: string | null;
   views?: number;
@@ -22,6 +23,7 @@ export default function SermonCard({
   scripture,
   summary,
   category,
+  minister,
   publishedAt,
   thumbnail,
   views,
@@ -78,9 +80,14 @@ export default function SermonCard({
           </p>
         )}
 
-        <div className="flex items-center gap-1.5 text-gray-400 text-xs mt-auto">
-          <Calendar className="w-3 h-3" />
-          <span>{formatDateShort(publishedAt)}</span>
+        <div className="flex items-center justify-between text-gray-400 text-xs mt-auto">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3 h-3" />
+            <span>{formatDateShort(publishedAt)}</span>
+          </div>
+          {minister && (
+            <span className="text-gray-500 font-medium">{minister}</span>
+          )}
         </div>
       </div>
     </Link>

@@ -7,7 +7,6 @@ import { BreadcrumbSchema } from "@/components/JsonLd";
 import { Search, Youtube, ChevronRight, TrendingUp, Clock, History } from "lucide-react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
-const CATEGORIES = ["전체", "주일예배", "특별집회", "수요예배", "새벽기도"];
 const PAGE_SIZE = 20;
 
 export const dynamic = "force-dynamic";
@@ -88,6 +87,7 @@ async function getSermons(searchParams: SearchParams) {
         scripture: true,
         summary: true,
         category: true,
+        minister: true,
         publishedAt: true,
         thumbnail: true,
         views: true,
@@ -96,8 +96,9 @@ async function getSermons(searchParams: SearchParams) {
     prisma.sermon.count({ where }),
   ]);
 
-  // 카테고리별 개수 (실패해도 무방)
+  // 카테고리별 개수 + 목록 (실패해도 무방)
   let countMap: Record<string, number> = {};
+  let categories: string[] = [];
   try {
     const allCategories = await prisma.sermon.findMany({
       select: { category: true },
@@ -105,11 +106,15 @@ async function getSermons(searchParams: SearchParams) {
     for (const s of allCategories) {
       countMap[s.category] = (countMap[s.category] || 0) + 1;
     }
+    // 개수 많은 순으로 정렬
+    categories = Object.entries(countMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => cat);
   } catch {
     // 실패 시 개수 표시 생략
   }
 
-  return { sermons, total, page, countMap };
+  return { sermons, total, page, countMap, categories };
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string; icon: React.ReactNode }[] = [
@@ -127,8 +132,9 @@ export default async function SermonsPage({
   let sermons: Awaited<ReturnType<typeof getSermons>>["sermons"] = [];
   let total = 0, page = 1;
   let countMap: Record<string, number> = {};
+  let categories: string[] = [];
   try {
-    ({ sermons, total, page, countMap } = await getSermons(params));
+    ({ sermons, total, page, countMap, categories } = await getSermons(params));
   } catch (e) {
     console.error("Sermons page DB error:", e);
   }
@@ -208,16 +214,17 @@ export default async function SermonsPage({
 
           {/* Category + Sort bar */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
-            {/* Categories */}
+            {/* Categories — DB에서 동적으로 */}
             <nav aria-label="설교 카테고리" className="flex gap-2 overflow-x-auto scrollbar-hide flex-1">
-              {CATEGORIES.map((cat) => {
+              {/* 전체 탭 */}
+              {(["전체", ...categories] as string[]).map((cat) => {
                 const count = cat === "전체" ? totalCount : (countMap[cat] ?? 0);
                 const href = `/sermons${buildQuery({ ...params, category: cat, page: "1" })}`;
                 return (
                   <a
                     key={cat}
                     href={href}
-                    className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                       activeCategory === cat
                         ? "bg-primary-700 text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -226,7 +233,7 @@ export default async function SermonsPage({
                   >
                     {cat}
                     {count > 0 && (
-                      <span className={`text-xs ${activeCategory === cat ? "text-primary-200" : "text-gray-400"}`}>
+                      <span className={`text-xs font-normal ${activeCategory === cat ? "text-primary-200" : "text-gray-400"}`}>
                         {count}
                       </span>
                     )}
@@ -302,6 +309,7 @@ export default async function SermonsPage({
                     scripture={sermon.scripture}
                     summary={sermon.summary}
                     category={sermon.category}
+                    minister={sermon.minister}
                     publishedAt={sermon.publishedAt}
                     thumbnail={sermon.thumbnail}
                     views={sermon.views}
