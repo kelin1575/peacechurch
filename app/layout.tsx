@@ -4,7 +4,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { OrganizationSchema } from "@/components/JsonLd";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
+const rawUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
+const BASE_URL = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
