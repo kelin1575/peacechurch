@@ -65,9 +65,19 @@ export default function YoutubeSyncButton() {
       )}
 
       {status === "error" && (
-        <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2">
-          <XCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{errorMsg}</span>
+        <div className="flex flex-col gap-1 text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2">
+          <div className="flex items-start gap-2">
+            <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{errorMsg}</span>
+          </div>
+          <a
+            href="/api/youtube?debug=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-6 underline text-red-500 hover:text-red-700"
+          >
+            API 응답 상세 확인 →
+          </a>
         </div>
       )}
     </div>
