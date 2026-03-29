@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { LayoutDashboard, BookOpen, MessageSquare, Youtube, Calendar, Plus } from "lucide-react";
+import YoutubeSyncButton from "@/components/admin/YoutubeSyncButton";
 
 async function getStats() {
   try {
@@ -89,7 +90,7 @@ export default async function AdminPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="font-bold text-gray-900 mb-4">빠른 작업</h2>
             <div className="space-y-3">
-              <AdminSyncButton />
+              <YoutubeSyncButton />
 
               <Link
                 href="/admin/devotional/new"
@@ -155,30 +156,3 @@ export default async function AdminPage() {
   );
 }
 
-function AdminSyncButton() {
-  return (
-    <form
-      action={async () => {
-        "use server";
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/youtube`,
-            { method: "POST" }
-          );
-          const data = await response.json();
-          console.log("YouTube sync result:", data);
-        } catch (error) {
-          console.error("YouTube sync error:", error);
-        }
-      }}
-    >
-      <button
-        type="submit"
-        className="w-full flex items-center gap-3 p-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
-      >
-        <Youtube className="w-5 h-5" />
-        유튜브 설교 동기화
-      </button>
-    </form>
-  );
-}

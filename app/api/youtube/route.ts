@@ -21,6 +21,13 @@ export async function POST() {
   try {
     const { videos } = await fetchChannelVideos(50);
 
+    if (videos.length === 0) {
+      return NextResponse.json(
+        { error: "YouTube API 키 또는 채널 ID를 확인해 주세요. 가져온 영상이 없습니다." },
+        { status: 400 }
+      );
+    }
+
     const results = await Promise.allSettled(
       videos.map((video) =>
         prisma.sermon.upsert({
@@ -43,9 +50,17 @@ export async function POST() {
     );
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length > 0) {
+      console.error("Some sermons failed to sync:", failed);
+    }
+
     return NextResponse.json({ synced: succeeded, total: videos.length });
   } catch (error) {
     console.error("YouTube sync error:", error);
-    return NextResponse.json({ error: "Sync failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "동기화 실패" },
+      { status: 500 }
+    );
   }
 }
