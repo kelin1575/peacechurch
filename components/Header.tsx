@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, BookOpen, Music, Heart, ChevronDown } from "lucide-react";
+import { Menu, X, BookOpen, Music, Heart, ChevronDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -19,7 +19,15 @@ const navItems = [
   { label: "매일묵상", href: "/devotional" },
   { label: "성경찾기", href: "/bible", icon: BookOpen },
   { label: "찬송가", href: "/hymnal", icon: Music },
-  { label: "후원하기", href: "/donate", icon: Heart },
+  {
+    label: "교회안내",
+    href: "/about",
+    icon: Info,
+    children: [
+      { label: "교회 소개", href: "/about" },
+      { label: "자주 묻는 질문", href: "/faq" },
+    ],
+  },
 ];
 
 export default function Header() {
@@ -27,19 +35,34 @@ export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const pathname = usePathname();
 
+  const isActive = (href: string) =>
+    href !== "/" &&
+    (pathname === href || pathname.startsWith(href.split("?")[0]));
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       {/* Top bar */}
       <div className="bg-primary-800 text-white text-xs py-1.5 text-center">
-        <p>수원평안교회 주일예배 매주 일요일 오전 11시 | 정재광 목사</p>
+        <p>
+          수원평안교회 주일예배&nbsp;
+          <strong>매주 일요일 오전 11시</strong>
+          &nbsp;|&nbsp;담임목사 정재광
+        </p>
       </div>
 
       {/* Main header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-700 rounded-full flex items-center justify-center">
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+            aria-label="수원평안교회 홈"
+          >
+            <div
+              className="w-10 h-10 bg-primary-700 rounded-full flex items-center justify-center flex-shrink-0"
+              aria-hidden="true"
+            >
               <span className="text-white font-bold text-lg">평</span>
             </div>
             <div>
@@ -51,39 +74,47 @@ export default function Header() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1" aria-label="주요 메뉴">
             {navItems.map((item) => (
               <div
                 key={item.href}
                 className="relative"
-                onMouseEnter={() =>
-                  item.children && setActiveDropdown(item.label)
-                }
+                onMouseEnter={() => item.children && setActiveDropdown(item.label)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                    pathname.startsWith(item.href) && item.href !== "/"
+                    "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isActive(item.href)
                       ? "text-primary-700 bg-primary-50"
                       : "text-gray-700 hover:text-primary-700 hover:bg-gray-50"
                   )}
+                  aria-current={isActive(item.href) ? "page" : undefined}
                 >
-                  {item.icon && <item.icon className="w-4 h-4" />}
+                  {item.icon && (
+                    <item.icon className="w-4 h-4" aria-hidden="true" />
+                  )}
                   {item.label}
-                  {item.children && <ChevronDown className="w-3 h-3" />}
+                  {item.children && (
+                    <ChevronDown className="w-3 h-3" aria-hidden="true" />
+                  )}
                 </Link>
 
                 {/* Dropdown */}
                 {item.children && activeDropdown === item.label && (
-                  <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                  <div
+                    className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50"
+                    role="menu"
+                    aria-label={`${item.label} 하위 메뉴`}
+                  >
                     {item.children.map((child) => (
                       <Link
                         key={child.href}
                         href={child.href}
                         className="block px-4 py-2.5 text-sm text-gray-700 hover:text-primary-700 hover:bg-primary-50 transition-colors"
                         onClick={() => setActiveDropdown(null)}
+                        role="menuitem"
                       >
                         {child.label}
                       </Link>
@@ -93,11 +124,8 @@ export default function Header() {
               </div>
             ))}
 
-            <Link
-              href="/donate"
-              className="ml-2 btn-gold text-sm px-4 py-2"
-            >
-              <Heart className="w-4 h-4" />
+            <Link href="/donate" className="ml-2 btn-gold text-sm px-4 py-2">
+              <Heart className="w-4 h-4" aria-hidden="true" />
               후원하기
             </Link>
           </nav>
@@ -106,12 +134,14 @@ export default function Header() {
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-            aria-label="메뉴 열기"
+            aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
           >
             {mobileOpen ? (
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6" aria-hidden="true" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className="w-6 h-6" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -119,25 +149,32 @@ export default function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white">
-          <nav className="max-w-7xl mx-auto px-4 py-3 space-y-1">
+        <nav
+          id="mobile-menu"
+          className="md:hidden border-t border-gray-100 bg-white"
+          aria-label="모바일 메뉴"
+        >
+          <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
             {navItems.map((item) => (
               <div key={item.href}>
                 <Link
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                    pathname.startsWith(item.href) && item.href !== "/"
+                    isActive(item.href)
                       ? "text-primary-700 bg-primary-50"
                       : "text-gray-700 hover:bg-gray-50"
                   )}
                   onClick={() => setMobileOpen(false)}
+                  aria-current={isActive(item.href) ? "page" : undefined}
                 >
-                  {item.icon && <item.icon className="w-4 h-4" />}
+                  {item.icon && (
+                    <item.icon className="w-4 h-4" aria-hidden="true" />
+                  )}
                   {item.label}
                 </Link>
                 {item.children && (
-                  <div className="ml-4 mt-1 space-y-1">
+                  <div className="ml-4 mt-1 space-y-0.5">
                     {item.children.slice(1).map((child) => (
                       <Link
                         key={child.href}
@@ -152,8 +189,17 @@ export default function Header() {
                 )}
               </div>
             ))}
-          </nav>
-        </div>
+
+            <Link
+              href="/donate"
+              className="flex items-center gap-3 px-4 py-3 mt-2 bg-gold-50 text-gold-700 rounded-lg text-sm font-semibold"
+              onClick={() => setMobileOpen(false)}
+            >
+              <Heart className="w-4 h-4" aria-hidden="true" />
+              후원하기
+            </Link>
+          </div>
+        </nav>
       )}
     </header>
   );
