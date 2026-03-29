@@ -437,7 +437,7 @@ export default async function HomePage() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
                   <a
-                    href="https://youtube.com/channel/UC9c1llukhxYQ5nma3550-kg"
+                    href="https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs bg-red-600 text-white px-3 py-1.5 rounded-full hover:bg-red-700 transition-colors"

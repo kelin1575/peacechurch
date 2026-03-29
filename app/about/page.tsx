@@ -105,7 +105,7 @@ export default function AboutPage() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <a
-                    href="https://youtube.com/channel/UC9c1llukhxYQ5nma3550-kg"
+                    href="https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
@@ -251,7 +251,7 @@ export default function AboutPage() {
                   <div>
                     <p className="font-semibold text-gray-900">유튜브</p>
                     <a
-                      href="https://youtube.com/channel/UC9c1llukhxYQ5nma3550-kg"
+                      href="https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary-600 hover:text-primary-700 text-sm"

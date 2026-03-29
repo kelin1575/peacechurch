@@ -210,7 +210,7 @@ export default async function SermonsPage({
                   유튜브 채널에서 최신 말씀을 확인해보세요
                 </p>
                 <a
-                  href="https://youtube.com/channel/UC9c1llukhxYQ5nma3550-kg"
+                  href="https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"

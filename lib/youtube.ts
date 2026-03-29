@@ -1,5 +1,5 @@
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UC9c1llukhxYQ5nma3550-kg";
+const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UC9c1llukhxYQ5nma355O-kg";
 
 export interface YouTubeVideo {
   id: string;

@@ -44,7 +44,7 @@ export default function Footer() {
               모든 사람이 평안을 누리는 공동체입니다.
             </p>
             <a
-              href="https://youtube.com/channel/UC9c1llukhxYQ5nma3550-kg"
+              href="https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-red-600/90 text-white text-xs px-3 py-1.5 rounded-full hover:bg-red-600 transition-colors"

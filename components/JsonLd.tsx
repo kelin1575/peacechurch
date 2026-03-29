@@ -34,7 +34,7 @@ export function OrganizationSchema({
         telephone: "031-000-0000",
         email: "info@peacechurch.kr",
         sameAs: [
-          "https://youtube.com/channel/UC9c1llukhxYQ5nma3550-kg",
+          "https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg",
           "https://www.peacechurch.kr",
         ],
         founder: {
