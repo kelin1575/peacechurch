@@ -67,15 +67,15 @@ export default function Footer() {
                     className="w-4 h-4 flex-shrink-0 mt-0.5"
                     aria-hidden="true"
                   />
-                  <span>경기도 수원시</span>
+                  <span>경기도 수원시 권선구 호매실로 218번길 110</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   <a
-                    href="tel:031-000-0000"
+                    href="tel:031-292-8119"
                     className="hover:text-white transition-colors"
                   >
-                    031-000-0000
+                    031-292-8119
                   </a>
                 </li>
                 <li className="flex items-center gap-2">
