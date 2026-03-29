@@ -3,7 +3,12 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const secret = new URL(request.url).searchParams.get("secret");
+  if (!secret || secret !== process.env.DEBUG_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const [count, sermons] = await Promise.all([
       prisma.sermon.count(),
