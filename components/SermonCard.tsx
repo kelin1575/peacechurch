@@ -12,6 +12,7 @@ interface SermonCardProps {
   category: string;
   publishedAt: Date | string;
   thumbnail?: string | null;
+  views?: number;
 }
 
 export default function SermonCard({
@@ -23,6 +24,7 @@ export default function SermonCard({
   category,
   publishedAt,
   thumbnail,
+  views,
 }: SermonCardProps) {
   const thumbUrl =
     thumbnail ||
@@ -49,6 +51,12 @@ export default function SermonCard({
         <span className="absolute top-2 left-2 bg-primary-700/90 text-white text-xs font-medium px-2.5 py-1 rounded-full">
           {category}
         </span>
+        {/* Views badge */}
+        {typeof views === "number" && views > 0 && (
+          <span className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+            👁 {views.toLocaleString()}
+          </span>
+        )}
       </div>
 
       {/* Content */}

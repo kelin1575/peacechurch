@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDateShort } from "@/lib/utils";
 import { ChevronLeft, Edit } from "lucide-react";
+import BatchGenerateButton from "@/components/admin/BatchGenerateButton";
 
 export default async function AdminSermonsPage() {
   let sermons: {
@@ -41,7 +42,10 @@ export default async function AdminSermonsPage() {
             <ChevronLeft className="w-4 h-4" />
             대시보드
           </Link>
-          <h1 className="text-2xl font-bold">설교 관리</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">설교 관리</h1>
+            <BatchGenerateButton />
+          </div>
         </div>
       </div>
 

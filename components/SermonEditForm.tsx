@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Sparkles } from "lucide-react";
 
 interface Sermon {
   id: string;
@@ -19,6 +19,8 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateStatus, setGenerateStatus] = useState<"idle" | "success" | "error">("idle");
   const [form, setForm] = useState({
     title: sermon.title,
     scripture: sermon.scripture || "",
@@ -26,6 +28,34 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
     interpretation: sermon.interpretation || "",
     category: sermon.category,
   });
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenerateStatus("idle");
+
+    try {
+      const response = await fetch(`/api/sermons/${sermon.id}/generate`, {
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("생성 실패");
+
+      const data = await response.json();
+      setForm((prev) => ({
+        ...prev,
+        scripture: data.scripture ?? prev.scripture,
+        summary: data.summary ?? prev.summary,
+        interpretation: data.interpretation ?? prev.interpretation,
+      }));
+      setGenerateStatus("success");
+      setTimeout(() => setGenerateStatus("idle"), 3000);
+    } catch {
+      setGenerateStatus("error");
+      setTimeout(() => setGenerateStatus("idle"), 3000);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +128,45 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
             />
           </div>
         </div>
+      </div>
+
+      {/* AI Generate */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-500">AI를 사용해 요약과 해석을 자동으로 생성합니다.</span>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={generating}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+            ${generateStatus === "success"
+              ? "bg-green-600 text-white hover:bg-green-700"
+              : generateStatus === "error"
+              ? "bg-red-600 text-white hover:bg-red-700"
+              : "bg-purple-600 text-white hover:bg-purple-700"
+            } disabled:opacity-60`}
+        >
+          {generating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              생성 중...
+            </>
+          ) : generateStatus === "success" ? (
+            <>
+              <Sparkles className="w-4 h-4" />
+              생성 완료 ✓
+            </>
+          ) : generateStatus === "error" ? (
+            <>
+              <Sparkles className="w-4 h-4" />
+              생성 실패 — 재시도
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              AI 자동 생성
+            </>
+          )}
+        </button>
       </div>
 
       {/* Summary */}
