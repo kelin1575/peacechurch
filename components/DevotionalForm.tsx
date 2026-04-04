@@ -7,7 +7,13 @@ import { Save, Loader2 } from "lucide-react";
 export default function DevotionalForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const today = new Date().toISOString().split("T")[0];
+  const [error, setError] = useState<string | null>(null);
+
+  // 한국 시간 기준 오늘 날짜
+  const todayKST = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+  );
+  const today = `${todayKST.getFullYear()}-${String(todayKST.getMonth() + 1).padStart(2, "0")}-${String(todayKST.getDate()).padStart(2, "0")}`;
 
   const [form, setForm] = useState({
     title: "",
@@ -20,6 +26,7 @@ export default function DevotionalForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch("/api/devotionals", {
@@ -28,12 +35,18 @@ export default function DevotionalForm() {
         body: JSON.stringify(form),
       });
 
-      if (!response.ok) throw new Error("저장 실패");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `오류 코드: ${response.status}`);
+      }
 
       alert("묵상이 등록되었습니다!");
       router.push("/admin");
-    } catch {
-      alert("저장 중 오류가 발생했습니다.");
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "저장 중 오류가 발생했습니다.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -41,11 +54,15 @@ export default function DevotionalForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+          <strong>오류:</strong> {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            날짜
-          </label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">날짜</label>
           <input
             type="date"
             value={form.date}
@@ -55,9 +72,7 @@ export default function DevotionalForm() {
           />
         </div>
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            본문 성경구절
-          </label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">본문 성경구절</label>
           <input
             type="text"
             value={form.scripture}
@@ -70,9 +85,7 @@ export default function DevotionalForm() {
       </div>
 
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          제목
-        </label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">제목</label>
         <input
           type="text"
           value={form.title}
@@ -84,9 +97,7 @@ export default function DevotionalForm() {
       </div>
 
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          묵상 내용
-        </label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">묵상 내용</label>
         <textarea
           value={form.content}
           onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -98,9 +109,7 @@ export default function DevotionalForm() {
       </div>
 
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          기도문 (선택)
-        </label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">기도문 (선택)</label>
         <textarea
           value={form.prayer}
           onChange={(e) => setForm({ ...form, prayer: e.target.value })}
@@ -111,22 +120,11 @@ export default function DevotionalForm() {
       </div>
 
       <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="btn-secondary flex-1"
-        >
+        <button type="button" onClick={() => router.back()} className="btn-secondary flex-1">
           취소
         </button>
         <button type="submit" disabled={loading} className="btn-primary flex-1">
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              등록하기
-            </>
-          )}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" />등록하기</>}
         </button>
       </div>
     </form>
