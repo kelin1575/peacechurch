@@ -172,7 +172,7 @@ async function syncYouTube(): Promise<{ synced: number; newVideos: YouTubeVideo[
 
 async function generateDevotional(sermon: {
   title: string;
-  description: string;
+  description: string | null;
   category: string;
   minister: string | null;
 }): Promise<{ title: string; scripture: string; content: string; prayer: string }> {
@@ -183,7 +183,7 @@ async function generateDevotional(sermon: {
 설교 제목: ${sermon.title}
 설교 카테고리: ${sermon.category}
 담당자: ${sermon.minister ?? "담임목사"}
-설교 설명: ${sermon.description || "(설명 없음)"}
+설교 설명: ${sermon.description ?? "(설명 없음)"}
 
 다음 형식으로 JSON을 작성해주세요 (마크다운 없이 순수 JSON만):
 {
@@ -244,7 +244,7 @@ export default async function handler() {
 
     // 4. 가장 최신 설교 영상 선택
     // 신규 영상이 있으면 우선, 없으면 최근 설교 DB에서 선택
-    let targetSermon: { title: string; description: string; category: string; minister: string | null } | null = null;
+    let targetSermon: { title: string; description: string | null; category: string; minister: string | null } | null = null;
 
     if (newVideos.length > 0) {
       const v = newVideos[0];
