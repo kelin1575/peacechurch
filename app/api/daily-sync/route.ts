@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     if (newVideos.length > 0) {
       const v = newVideos[0];
       const parsed = parseSermonTitle(v.title);
-      targetSermon = { title: v.title, description: v.description, category: parsed.category, minister: parsed.minister };
+      targetSermon = { title: v.title, description: v.description, category: parsed.category, minister: parsed.minister ?? null };
       log.push(`묵상 기준 영상 (신규): ${v.title}`);
     } else {
       targetSermon = await prisma.sermon.findFirst({
