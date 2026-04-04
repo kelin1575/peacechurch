@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2020"],
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": ".netlify/functions-build"
+  },
+  "include": ["netlify/functions/**/*.ts"]
+}
