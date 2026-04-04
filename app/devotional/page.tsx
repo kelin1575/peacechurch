@@ -6,6 +6,8 @@ import Link from "next/link";
 import { DevotionalArticleSchema, BreadcrumbSchema } from "@/components/JsonLd";
 import ShareButton from "@/components/ShareButton";
 
+export const dynamic = "force-dynamic";
+
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
 
 export const metadata: Metadata = {
