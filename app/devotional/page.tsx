@@ -17,25 +17,56 @@ export const metadata: Metadata = {
   keywords: ["매일묵상", "성경묵상", "QT", "정재광목사", "수원평안교회", "기도"],
   openGraph: {
     title: "매일 묵상 | 수원평안교회 정재광 목사",
-    description:
-      "오늘의 성경 말씀과 묵상, 기도문. 매일 새로운 묵상을 만나보세요.",
+    description: "오늘의 성경 말씀과 묵상, 기도문. 매일 새로운 묵상을 만나보세요.",
     url: `${BASE_URL}/devotional`,
   },
   alternates: { canonical: `${BASE_URL}/devotional` },
 };
 
-async function getTodayDevotional() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+/** KST 기준 오늘 날짜를 UTC midnight으로 반환 */
+function getTodayUtcKST(): Date {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()));
+}
 
+/** YYYY-MM-DD 문자열 → UTC midnight */
+function parseDateParam(dateStr: string): Date | null {
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+}
+
+async function getDevotionalByDate(date: Date) {
+  const next = new Date(date.getTime() + 86400000);
   try {
     return await prisma.devotional.findFirst({
-      where: { date: { gte: today, lt: tomorrow } },
+      where: { date: { gte: date, lt: next } },
     });
   } catch {
     return null;
+  }
+}
+
+async function getAdjacentDevotionals(date: Date) {
+  try {
+    const [prev, next] = await Promise.all([
+      // 이전: 현재 날짜보다 이전 중 가장 최신
+      prisma.devotional.findFirst({
+        where: { date: { lt: date } },
+        orderBy: { date: "desc" },
+        select: { date: true },
+      }),
+      // 다음: 현재 날짜보다 이후 중 가장 과거
+      prisma.devotional.findFirst({
+        where: { date: { gt: date } },
+        orderBy: { date: "asc" },
+        select: { date: true },
+      }),
+    ]);
+    return { prev, next };
+  } catch {
+    return { prev: null, next: null };
   }
 }
 
@@ -49,6 +80,11 @@ async function getRecentDevotionals() {
   } catch {
     return [];
   }
+}
+
+function toDateParam(date: Date): string {
+  // UTC 날짜를 YYYY-MM-DD로
+  return date.toISOString().split("T")[0];
 }
 
 const MOCK_DEVOTIONAL = {
@@ -70,13 +106,25 @@ const MOCK_DEVOTIONAL = {
   updatedAt: new Date(),
 };
 
-export default async function DevotionalPage() {
-  const [todayDevotional, recentDevotionals] = await Promise.all([
-    getTodayDevotional(),
+export default async function DevotionalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date: dateParam } = await searchParams;
+
+  // 요청 날짜 결정: ?date=YYYY-MM-DD 있으면 그 날짜, 없으면 KST 오늘
+  const targetDate = dateParam ? parseDateParam(dateParam) : getTodayUtcKST();
+  const resolvedDate = targetDate ?? getTodayUtcKST();
+
+  const [todayDevotional, adjacent, recentDevotionals] = await Promise.all([
+    getDevotionalByDate(resolvedDate),
+    getAdjacentDevotionals(resolvedDate),
     getRecentDevotionals(),
   ]);
 
-  const devotional = todayDevotional || MOCK_DEVOTIONAL;
+  const isMock = !todayDevotional;
+  const devotional = todayDevotional || { ...MOCK_DEVOTIONAL, date: resolvedDate };
 
   const breadcrumbs = [
     { name: "홈", url: BASE_URL },
@@ -106,12 +154,14 @@ export default async function DevotionalPage() {
               <BookOpen className="w-8 h-8 text-green-300" aria-hidden="true" />
               <h1 className="text-3xl md:text-4xl font-bold">매일 묵상</h1>
             </div>
-            <time
-              dateTime={new Date(devotional.date).toISOString()}
-              className="text-green-200"
-            >
-              {formatDate(new Date(devotional.date))}
+            <time dateTime={resolvedDate.toISOString()} className="text-green-200">
+              {formatDate(resolvedDate)}
             </time>
+            {isMock && (
+              <p className="text-green-300 text-sm mt-1">
+                이 날의 묵상이 아직 등록되지 않았습니다.
+              </p>
+            )}
           </div>
         </div>
 
@@ -135,18 +185,12 @@ export default async function DevotionalPage() {
               {/* Content */}
               <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 mb-5">
-                  <span
-                    className="w-1 h-7 bg-green-500 rounded-full"
-                    aria-hidden="true"
-                  />
+                  <span className="w-1 h-7 bg-green-500 rounded-full" aria-hidden="true" />
                   <h3 className="font-bold text-gray-900 text-lg">오늘의 묵상</h3>
                 </div>
                 <div className="prose prose-gray max-w-none">
                   {devotional.content.split("\n\n").map((para, i) => (
-                    <p
-                      key={i}
-                      className="text-gray-700 leading-relaxed mb-4 last:mb-0"
-                    >
+                    <p key={i} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
                       {para}
                     </p>
                   ))}
@@ -157,15 +201,10 @@ export default async function DevotionalPage() {
               {devotional.prayer && (
                 <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
                   <div className="flex items-center gap-2 mb-4">
-                    <Heart
-                      className="w-5 h-5 text-amber-600 fill-amber-200"
-                      aria-hidden="true"
-                    />
+                    <Heart className="w-5 h-5 text-amber-600 fill-amber-200" aria-hidden="true" />
                     <h3 className="font-bold text-amber-800 text-lg">오늘의 기도</h3>
                   </div>
-                  <p className="text-amber-900 leading-relaxed italic">
-                    {devotional.prayer}
-                  </p>
+                  <p className="text-amber-900 leading-relaxed italic">{devotional.prayer}</p>
                 </div>
               )}
 
@@ -178,33 +217,52 @@ export default async function DevotionalPage() {
                   <BookOpen className="w-4 h-4" aria-hidden="true" />
                   본문 성경 보기
                 </Link>
-                <ShareButton title={`오늘의 묵상: ${devotional.title} (${devotional.scripture})`} label="묵상 나누기" />
+                <ShareButton
+                  title={`오늘의 묵상: ${devotional.title} (${devotional.scripture})`}
+                  label="묵상 나누기"
+                />
               </div>
 
-              {/* Navigation between devotionals */}
+              {/* 이전/다음 묵상 네비게이션 */}
               <nav
                 aria-label="묵상 이동"
                 className="flex items-center justify-between pt-4 border-t border-gray-100"
               >
-                <button
-                  disabled
-                  className="flex items-center gap-2 text-gray-400 text-sm cursor-not-allowed"
-                  aria-label="이전 묵상"
-                >
-                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-                  이전 묵상
-                </button>
-                <span className="text-xs text-gray-400">
-                  {formatDateShort(devotional.date)}
-                </span>
-                <button
-                  disabled
-                  className="flex items-center gap-2 text-gray-400 text-sm cursor-not-allowed"
-                  aria-label="다음 묵상"
-                >
-                  다음 묵상
-                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
-                </button>
+                {adjacent.prev ? (
+                  <Link
+                    href={`/devotional?date=${toDateParam(adjacent.prev.date)}`}
+                    className="flex items-center gap-2 text-gray-600 hover:text-primary-700 text-sm transition-colors"
+                    aria-label="이전 묵상"
+                  >
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                    이전 묵상
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-2 text-gray-300 text-sm cursor-not-allowed">
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                    이전 묵상
+                  </span>
+                )}
+
+                <Link href="/devotional" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                  오늘 묵상
+                </Link>
+
+                {adjacent.next ? (
+                  <Link
+                    href={`/devotional?date=${toDateParam(adjacent.next.date)}`}
+                    className="flex items-center gap-2 text-gray-600 hover:text-primary-700 text-sm transition-colors"
+                    aria-label="다음 묵상"
+                  >
+                    다음 묵상
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-2 text-gray-300 text-sm cursor-not-allowed">
+                    다음 묵상
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                  </span>
+                )}
               </nav>
             </article>
 
@@ -237,24 +295,32 @@ export default async function DevotionalPage() {
                 </div>
                 {recentDevotionals.length > 0 ? (
                   <ul className="space-y-1" role="list">
-                    {recentDevotionals.map((d) => (
-                      <li key={d.id}>
-                        <a
-                          href={`/devotional?date=${new Date(d.date).toISOString().split("T")[0]}`}
-                          className="block p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
-                        >
-                          <p className="text-xs text-gray-400 mb-0.5">
-                            {formatDateShort(d.date)}
-                          </p>
-                          <p className="text-sm text-gray-700 font-medium group-hover:text-primary-700 transition-colors line-clamp-1">
-                            {d.title}
-                          </p>
-                          <p className="text-xs text-green-600 mt-0.5">
-                            {d.scripture}
-                          </p>
-                        </a>
-                      </li>
-                    ))}
+                    {recentDevotionals.map((d) => {
+                      const dParam = toDateParam(d.date);
+                      const isActive = toDateParam(resolvedDate) === dParam;
+                      return (
+                        <li key={d.id}>
+                          <Link
+                            href={`/devotional?date=${dParam}`}
+                            className={`block p-2.5 rounded-lg transition-colors group ${
+                              isActive
+                                ? "bg-green-50 border border-green-200"
+                                : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <p className="text-xs text-gray-400 mb-0.5">
+                              {formatDateShort(d.date)}
+                            </p>
+                            <p className={`text-sm font-medium line-clamp-1 transition-colors ${
+                              isActive ? "text-green-700" : "text-gray-700 group-hover:text-primary-700"
+                            }`}>
+                              {d.title}
+                            </p>
+                            <p className="text-xs text-green-600 mt-0.5">{d.scripture}</p>
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-4">
@@ -265,9 +331,7 @@ export default async function DevotionalPage() {
 
               {/* Bible link */}
               <div className="bg-primary-50 rounded-xl p-5 border border-primary-100">
-                <h3 className="font-semibold text-primary-800 mb-2">
-                  성경 본문 읽기
-                </h3>
+                <h3 className="font-semibold text-primary-800 mb-2">성경 본문 읽기</h3>
                 <p className="text-sm text-primary-600 mb-3">
                   개역개정 성경으로 오늘의 본문을 읽어보세요
                 </p>
@@ -297,4 +361,3 @@ export default async function DevotionalPage() {
     </>
   );
 }
-
