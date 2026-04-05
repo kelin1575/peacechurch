@@ -76,14 +76,15 @@ export default function Header() {
         <div className="flex items-center justify-between h-[68px]">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center flex-shrink-0" aria-label="평안교회 홈">
+          <Link href="/" className="flex items-center flex-shrink-0" aria-label="수원평안교회 홈">
             <Image
-              src="/logo.svg"
-              alt="평안교회 PEACE CHURCH"
-              width={160}
-              height={48}
+              src="https://peacechurch.kr/UserData/pyunganch/Layouts/pyunganch2025_Layout/Images/1_logo_2.png"
+              alt="수원평안교회 PEACE CHURCH"
+              width={180}
+              height={52}
               priority
               className="h-12 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).src = "/logo.svg"; }}
             />
           </Link>
 
