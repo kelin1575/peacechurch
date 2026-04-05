@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { MapPin, Phone, Mail, Youtube, Clock } from "lucide-react";
 
 const QUICK_LINKS = [
@@ -22,22 +21,22 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-3 mb-5" aria-label="평안교회 홈">
-              {/* 로고 (흰 배경 원형) */}
-              <div className="bg-white rounded-full p-1 flex-shrink-0">
-                <Image
-                  src="/logo.svg"
-                  alt="평안교회 PEACE CHURCH"
-                  width={120}
+            <Link href="/" className="flex items-center mb-5" aria-label="수원평안교회 홈">
+              <div className="bg-white rounded-lg px-3 py-2 inline-flex items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://peacechurch.kr/UserData/pyunganch/Layouts/pyunganch2025_Layout/Images/1_logo_2.png"
+                  alt="수원평안교회 PEACE CHURCH"
                   height={36}
                   className="h-9 w-auto"
+                  onError={(e) => { (e.target as HTMLImageElement).src = "/logo.svg"; }}
                 />
               </div>
             </Link>
             <p className="text-blue-200 text-sm leading-relaxed mb-4">
-              대한예수교장로회 평안교회<br />
-              하나님의 말씀 위에 세워진 교회,<br />
-              모든 사람이 평안을 누리는 공동체입니다.
+              대한예수교장로회 수원평안교회<br />
+              평안을 함께 누리는 복음 공동체<br />
+              담임목사 정재광
             </p>
             <a
               href="https://youtube.com/channel/UC9c1llukhxYQ5nma355O-kg"

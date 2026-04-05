@@ -58,6 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic sermon pages
   let sermonPages: MetadataRoute.Sitemap = [];
+  let devotionalPages: MetadataRoute.Sitemap = [];
   try {
     const sermons = await prisma.sermon.findMany({
       select: { id: true, updatedAt: true },
@@ -74,5 +75,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ignore db errors during build
   }
 
-  return [...staticPages, ...sermonPages];
+  try {
+    const devotionals = await prisma.devotional.findMany({
+      select: { date: true, updatedAt: true },
+      orderBy: { date: "desc" },
+      take: 90,
+    });
+    devotionalPages = devotionals.map((d) => {
+      const dateStr = d.date.toISOString().slice(0, 10);
+      return {
+        url: `${baseUrl}/devotional?date=${dateStr}`,
+        lastModified: d.updatedAt,
+        changeFrequency: "daily" as const,
+        priority: 0.7,
+      };
+    });
+  } catch {
+    // ignore db errors during build
+  }
+
+  return [...staticPages, ...sermonPages, ...devotionalPages];
 }
