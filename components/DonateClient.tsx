@@ -10,7 +10,7 @@ interface Account {
   description?: string;
 }
 
-export default function DonateClient({ account }: { account: Account }) {
+export default function DonateClient({ account, compact }: { account: Account; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -18,6 +18,19 @@ export default function DonateClient({ account }: { account: Account }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (compact) {
+    return (
+      <button
+        onClick={handleCopy}
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
+          copied ? "bg-green-500 text-white" : "bg-primary-700 text-white hover:bg-primary-800"
+        }`}
+      >
+        {copied ? <><Check className="w-4 h-4" />복사됨!</> : <><Copy className="w-4 h-4" />계좌번호 복사</>}
+      </button>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">

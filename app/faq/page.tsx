@@ -8,14 +8,14 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
 export const metadata: Metadata = {
   title: "자주 묻는 질문 (FAQ)",
   description:
-    "수원평안교회에 대한 자주 묻는 질문들입니다. 예배 시간, 오시는 길, 온라인 설교 시청, 헌금 안내, 새가족 등록 방법을 확인하세요.",
+    "수원평안교회에 대한 자주 묻는 질문들입니다. 예배 시간, 오시는 길, 온라인 설교 시청, 헌금 계좌 안내, 새가족 등록 방법을 확인하세요.",
   keywords: [
     "수원평안교회 FAQ", "정재광목사 설교", "주일예배 시간",
-    "온라인예배", "교회 안내", "새가족 등록",
+    "헌금 계좌", "새가족 등록", "수원평안교회 연락처",
   ],
   openGraph: {
     title: "수원평안교회 자주 묻는 질문 | 정재광 목사",
-    description: "예배 시간, 오시는 길, 헌금 안내 등 수원평안교회 자주 묻는 질문들",
+    description: "예배 시간, 오시는 길, 헌금 계좌 등 수원평안교회 자주 묻는 질문들",
     url: `${BASE_URL}/faq`,
   },
   alternates: { canonical: `${BASE_URL}/faq` },
@@ -28,17 +28,22 @@ const FAQ_GROUPS = [
       {
         question: "주일예배는 몇 시에 드리나요?",
         answer:
-          "수원평안교회 주일예배는 1부 오전 9시, 2부 오전 11시 두 차례 드립니다. 2부 예배가 주예배이며 담임목사 정재광 목사님께서 직접 말씀을 전하십니다. 예배는 찬양, 기도, 말씀, 헌금 순서로 진행됩니다.",
+          "주일예배는 1부 오전 9시, 2부 오전 11시(주예배), 3부 오후 2시 세 차례 드립니다. 모두 3층 대예배실에서 진행되며, 담임목사 정재광 목사님께서 말씀을 전하십니다.",
       },
       {
-        question: "주일 외 평일 예배도 있나요?",
+        question: "주중 예배도 있나요?",
         answer:
-          "네, 수요일 저녁 7시 30분 수요예배, 금요일 저녁 7시 30분 금요기도회, 매일 새벽 5시 30분 새벽기도회가 있습니다. 모두 본당에서 드립니다.",
+          "수요예배와 금요기도회는 매주 저녁 8시에 3층 대예배실에서 드립니다.",
+      },
+      {
+        question: "다음세대(어린이·청소년·청년) 예배는 어떻게 되나요?",
+        answer:
+          "유아·유치부는 주일 오전 11시(1층 유치부실), 아동부(유·초등부)는 오전 11시·오후 2시(2층 중예배실), 청소년부(중고등부)는 오전 9시 30분(2층 중예배실), 청년부는 오후 3시 30분(2층 청년부실)에 예배를 드립니다. 어와나(Sparks·T&T)는 주일 오후 3시 30분, 어와나(Trek·Journey)는 토요일 오전 10시에 4층 체육관에서 진행됩니다. 영어주일학교(RTA)는 오후 2시에 2층 유년부실에서 운영합니다.",
       },
       {
         question: "온라인으로도 예배를 드릴 수 있나요?",
         answer:
-          "네, 수원평안교회 공식 유튜브 채널에서 주일예배 설교를 무료로 시청하실 수 있습니다. 또한 이 사이트의 '설교 말씀' 메뉴에서 카테고리별로 정리된 설교 목록과 말씀 요약, 해석을 확인하실 수 있습니다.",
+          "수원평안교회 공식 유튜브 채널에서 주일예배 설교를 무료로 시청하실 수 있습니다. 이 사이트의 '설교 말씀' 메뉴에서도 카테고리별 설교 목록과 말씀 요약, 신학적 해석을 함께 보실 수 있습니다.",
       },
     ],
   },
@@ -48,10 +53,10 @@ const FAQ_GROUPS = [
       {
         question: "교회 주소가 어떻게 되나요?",
         answer:
-          "수원평안교회는 경기도 수원시 권선구 호매실로 218번길 110에 위치해 있습니다. 네이버 지도나 카카오맵에서 '수원평안교회'로 검색하시면 찾아오실 수 있습니다. 교회 주차장을 이용하실 수 있습니다.",
+          "경기도 수원시 권선구 호매실로 218번길 110입니다. 네이버 지도나 카카오맵에서 '수원평안교회'로 검색하시면 됩니다. 교회 주차장을 이용하실 수 있습니다.",
       },
       {
-        question: "전화번호와 연락처가 어떻게 되나요?",
+        question: "전화번호가 어떻게 되나요?",
         answer:
           "교회 대표 전화번호는 031-292-8119입니다. 평일 오전 9시 ~ 오후 6시 사이에 연락 주시면 안내를 받으실 수 있습니다.",
       },
@@ -71,14 +76,14 @@ const FAQ_GROUPS = [
           "처음 방문하시는 분들은 주일 오전 11시 2부 예배에 편안하게 참석하시면 됩니다. 예배 후 새가족 안내를 받으실 수 있습니다. 교회 사무실(031-292-8119)에 미리 연락하시면 더욱 세심한 안내를 받으실 수 있습니다.",
       },
       {
-        question: "온라인으로 새가족 등록을 할 수 있나요?",
-        answer:
-          "네, 교회 홈페이지(peacechurch.kr) 또는 이 사이트에서 새가족 등록 신청을 하실 수 있습니다. 등록 후 교회에서 연락을 드립니다. 직접 방문하여 등록하시는 것도 가능합니다.",
-      },
-      {
         question: "어린이·청소년도 함께할 수 있나요?",
         answer:
-          "네, 수원평안교회는 모든 세대를 위한 교회입니다. 어린이예배, 청소년예배, 청년예배 등 연령별 예배와 교육 프로그램이 운영됩니다. 자세한 내용은 교회 사무실로 문의해 주세요.",
+          "네, 수원평안교회는 유아부터 청년까지 모든 세대를 위한 교회입니다. 유아·유치부, 아동부(유·초등부), 청소년부(중고등부), 청년부와 어와나, 영어주일학교(RTA) 등 다양한 프로그램이 운영됩니다.",
+      },
+      {
+        question: "'세움' 양육 프로그램이 무엇인가요?",
+        answer:
+          "세움은 수원평안교회의 대표 양육 프로그램으로, 학부모를 말씀으로 세우고 가정을 세워 예수님의 눈으로 다음세대를 키우는 프로그램입니다. 자세한 내용은 교회 사무실로 문의해 주세요.",
       },
     ],
   },
@@ -88,7 +93,7 @@ const FAQ_GROUPS = [
       {
         question: "헌금 계좌를 알고 싶습니다.",
         answer:
-          "정확한 헌금 계좌번호는 교회 사무실(031-292-8119)로 문의하시거나, 이 사이트의 '섬김 > 후원하기' 페이지를 확인해 주세요. 이체 시 반드시 이름과 헌금 종류를 메모란에 기입해 주세요. (예: 홍길동 십일조)",
+          "일반 헌금 계좌는 농협은행 351-1062-3026-93 (예금주: 수원평안교회)입니다. 이체 시 메모란에 이름과 헌금 종류를 기입해 주세요. (예: 홍길동 십일조) 추가 계좌(선교헌금 등)는 교회 사무실(031-292-8119)로 문의해 주세요.",
       },
       {
         question: "헌금 영수증(기부금 영수증)을 받을 수 있나요?",
@@ -103,12 +108,12 @@ const FAQ_GROUPS = [
       {
         question: "정재광 목사님의 설교를 어디서 볼 수 있나요?",
         answer:
-          "수원평안교회 공식 유튜브 채널에서 무료로 시청하실 수 있습니다. 또한 이 사이트의 '설교 말씀' 메뉴에서 카테고리(주일예배, 수요예배 등)별로 설교 목록을 확인하고, 말씀 요약과 신학적 해석도 함께 보실 수 있습니다.",
+          "수원평안교회 공식 유튜브 채널에서 무료로 시청하실 수 있습니다. 이 사이트의 '설교 말씀' 메뉴에서 카테고리(주일예배·수요예배·다음세대 등)별 설교 목록과 말씀 요약, 신학적 해석도 함께 보실 수 있습니다.",
       },
       {
         question: "매일 묵상은 어떻게 이용하나요?",
         answer:
-          "이 사이트 상단 '양육과훈련 > 매일 묵상' 메뉴를 통해 오늘의 묵상 말씀, 성경 본문, 기도문을 만나실 수 있습니다. 매일 오전 7시에 최신 설교를 기반으로 AI가 생성한 묵상이 등록됩니다. 과거 묵상도 날짜별로 찾아볼 수 있습니다.",
+          "사이트 상단 '양육과훈련 > 매일 묵상' 메뉴를 통해 오늘의 묵상 말씀, 성경 본문, 기도문을 만나실 수 있습니다. 매일 오전 7시에 최신 설교를 기반으로 묵상이 자동 등록됩니다. 과거 묵상도 날짜별로 찾아볼 수 있습니다.",
       },
       {
         question: "성경은 어떤 번역본을 사용하나요?",
@@ -124,16 +129,13 @@ export default function FAQPage() {
     { name: "홈", url: BASE_URL },
     { name: "FAQ", url: `${BASE_URL}/faq` },
   ];
-
   const allItems = FAQ_GROUPS.flatMap((g) => g.items);
 
   return (
     <>
       <FAQSchema items={allItems} />
       <BreadcrumbSchema items={breadcrumbs} />
-
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
         <div className="bg-primary-800 text-white py-12">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-3xl md:text-4xl font-bold mb-3">자주 묻는 질문</h1>
@@ -156,22 +158,13 @@ export default function FAQPage() {
             </section>
           ))}
 
-          {/* 추가 문의 */}
           <div className="bg-primary-50 rounded-2xl p-8 border border-primary-100 text-center">
             <h2 className="text-xl font-bold text-gray-900 mb-3">더 궁금한 점이 있으신가요?</h2>
-            <p className="text-gray-600 mb-6">
-              아래 연락처로 문의하시거나 교회에 직접 방문해 주세요.
-            </p>
+            <p className="text-gray-600 mb-6">아래 연락처로 문의하시거나 교회에 직접 방문해 주세요.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a href="tel:031-292-8119" className="btn-primary px-6 py-2.5 text-sm">
-                📞 031-292-8119
-              </a>
-              <Link href="/about" className="btn-secondary px-6 py-2.5 text-sm">
-                교회 소개 보기
-              </Link>
-              <Link href="/about#contact" className="btn-secondary px-6 py-2.5 text-sm">
-                오시는 길 보기
-              </Link>
+              <a href="tel:031-292-8119" className="btn-primary px-6 py-2.5 text-sm">📞 031-292-8119</a>
+              <Link href="/about" className="btn-secondary px-6 py-2.5 text-sm">교회 소개 보기</Link>
+              <Link href="/about#contact" className="btn-secondary px-6 py-2.5 text-sm">오시는 길 보기</Link>
             </div>
           </div>
         </div>
@@ -184,9 +177,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   return (
     <details className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <summary className="flex items-center justify-between px-6 py-5 cursor-pointer list-none hover:bg-gray-50 transition-colors">
-        <h3 className="font-semibold text-gray-900 pr-4 text-sm md:text-base">
-          {question}
-        </h3>
+        <h3 className="font-semibold text-gray-900 pr-4 text-sm md:text-base">{question}</h3>
         <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0 transition-transform group-open:rotate-180" />
       </summary>
       <div className="px-6 pb-5 pt-0">

@@ -1,29 +1,23 @@
-import { Heart, Building2, CheckCircle, Phone, AlertCircle } from "lucide-react";
+import { Heart, Building2, CheckCircle, Phone } from "lucide-react";
 import DonateClient from "@/components/DonateClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "헌금 안내 | 수원평안교회",
-  description: "수원평안교회 온라인 헌금 계좌 안내. 십일조, 주일헌금, 선교헌금, 감사헌금 등 헌금 종류별 안내.",
+  description: "수원평안교회 헌금 계좌 안내. 농협 351-1062-3026-93 (수원평안교회). 십일조, 주일헌금, 선교헌금, 감사헌금 등.",
 };
 
 const DONATION_ACCOUNTS = [
   {
-    bankName: "국민은행",
-    accountNumber: "계좌번호 확인 필요",
-    accountHolder: "수원평안교회",
-    description: "일반 헌금 (십일조, 감사헌금, 주일헌금)",
-  },
-  {
     bankName: "농협은행",
-    accountNumber: "계좌번호 확인 필요",
+    accountNumber: "351-1062-3026-93",
     accountHolder: "수원평안교회",
-    description: "선교 헌금",
+    description: "일반 헌금 (십일조·감사·주일헌금 등)",
   },
 ];
 
 const DONATION_TYPES = [
-  { icon: "🙏", title: "십일조", desc: "소득의 십분의 일을 하나님께 드리는 헌금입니다. (말라기 3:10)" },
+  { icon: "🙏", title: "십일조",   desc: "소득의 십분의 일을 하나님께 드리는 헌금입니다. (말라기 3:10)" },
   { icon: "⛪", title: "주일 헌금", desc: "주일 예배를 통해 감사함으로 드리는 헌금입니다." },
   { icon: "🌏", title: "선교 헌금", desc: "국내외 선교사와 선교 사역을 위한 헌금입니다." },
   { icon: "🤲", title: "감사 헌금", desc: "하나님의 은혜에 감사하여 특별히 드리는 헌금입니다." },
@@ -64,18 +58,21 @@ export default function DonatePage() {
             <Building2 className="w-5 h-5 text-primary-600" />
             헌금 계좌 안내
           </h2>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">
-              정확한 계좌번호는 교회 사무실(<a href="tel:031-292-8119" className="font-semibold underline">031-292-8119</a>)로 문의해 주세요.
-              온라인 이체 시 반드시 <strong>이름과 헌금 종류</strong>를 메모란에 기입해 주세요.
-            </p>
+
+          {/* 주요 계좌 카드 */}
+          <div className="bg-primary-50 border-2 border-primary-200 rounded-2xl p-6 mb-4">
+            <p className="text-xs text-primary-500 font-semibold mb-1">일반 헌금 계좌</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="text-2xl font-bold text-primary-900 tracking-wide">351-1062-3026-93</p>
+                <p className="text-sm text-primary-700 mt-0.5">농협은행 · 예금주: 수원평안교회</p>
+              </div>
+              <DonateClient account={DONATION_ACCOUNTS[0]} compact />
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {DONATION_ACCOUNTS.map((account, i) => (
-              <DonateClient key={i} account={account} />
-            ))}
-          </div>
+          <p className="text-xs text-gray-500 mb-6">
+            * 추가 계좌(선교헌금 등)는 교회 사무실(<a href="tel:031-292-8119" className="text-primary-600 font-medium">031-292-8119</a>)로 문의해 주세요.
+          </p>
         </section>
 
         {/* 온라인 헌금 방법 */}
@@ -86,15 +83,13 @@ export default function DonatePage() {
           </h2>
           <ol className="space-y-3">
             {[
-              "위 계좌번호로 헌금을 이체합니다.",
-              "이체 시 메모란에 \"이름 + 헌금종류\"를 기입합니다. (예: 홍길동 십일조, 홍길동 선교헌금)",
+              "위 농협 계좌로 헌금을 이체합니다.",
+              "이체 시 메모란에 '이름 + 헌금종류'를 기입합니다. (예: 홍길동 십일조, 홍길동 감사헌금)",
               "헌금 영수증이 필요하신 분은 교회 사무실로 연락해 주세요.",
-              "세금 영수증(기부금 영수증)은 연말정산 시기에 발급받으실 수 있습니다.",
+              "기부금 영수증(연말정산용)은 교회 사무실을 통해 발급받으실 수 있습니다.",
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-700 text-white text-xs font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-700 text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
                 <span className="text-sm text-gray-700 leading-relaxed">{step}</span>
               </li>
             ))}
@@ -125,12 +120,9 @@ export default function DonatePage() {
           <p className="text-gray-600 text-sm mb-4">
             헌금 계좌, 영수증 발급, 기부금 영수증 등 궁금한 점은 교회 사무실로 연락해 주세요.
           </p>
-          <a
-            href="tel:031-292-8119"
-            className="inline-flex items-center gap-2 bg-primary-700 text-white px-6 py-2.5 rounded-lg hover:bg-primary-800 transition-colors text-sm font-medium"
-          >
-            <Phone className="w-4 h-4" />
-            031-292-8119
+          <a href="tel:031-292-8119"
+            className="inline-flex items-center gap-2 bg-primary-700 text-white px-6 py-2.5 rounded-lg hover:bg-primary-800 transition-colors text-sm font-medium">
+            <Phone className="w-4 h-4" /> 031-292-8119
           </a>
         </section>
 
