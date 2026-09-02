@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, HeartHandshake, Eye, EyeOff, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { prayerCategoryStyle, timeAgo } from "@/lib/prayer";
-import { setPrayerStatus, deletePrayer } from "../actions";
+import { setPrayerStatus, deletePrayer, runDailyPrayer } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +17,12 @@ async function getPrayers() {
   }
 }
 
-export default async function AdminPrayersPage() {
-  const prayers = await getPrayers();
+export default async function AdminPrayersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string; error?: string }>;
+}) {
+  const [prayers, params] = await Promise.all([getPrayers(), searchParams]);
   const hiddenCount = prayers?.filter((p) => p.status === "hidden").length ?? 0;
 
   return (
@@ -42,6 +46,36 @@ export default async function AdminPrayersPage() {
             <span className="ml-1 text-gray-400">· 숨김 {hiddenCount}건</span>
           )}
         </p>
+
+        {params.ok && (
+          <div className="mb-6 rounded-xl border border-olive-200 bg-olive-50 p-4 text-sm text-olive-800">
+            {params.ok}
+          </div>
+        )}
+        {params.error && (
+          <div role="alert" className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            {params.error}
+          </div>
+        )}
+
+        {/* 매일 아침 배치가 올리는 공동 기도제목 — 확인용 수동 실행 */}
+        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-5 flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-[240px]">
+            <p className="font-semibold text-gray-900 text-sm mb-1">
+              오늘의 공동 기도제목
+            </p>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              매일 아침 6시에 교회 이름으로 기도제목 하나가 자동으로 올라갑니다.
+              요일마다 주제가 다릅니다 — 주일 예배, 월 가정, 화 다음세대,
+              수 교회, 목 이웃, 금 나라와 열방, 토 회복.
+            </p>
+          </div>
+          <form action={runDailyPrayer}>
+            <button type="submit" className="btn-secondary text-sm py-2.5">
+              지금 올려보기
+            </button>
+          </form>
+        </div>
 
         {prayers === null && (
           <div className="mb-6 rounded-xl border border-gold-200 bg-gold-50 p-4 text-sm text-gold-800">
@@ -78,6 +112,11 @@ export default async function AdminPrayersPage() {
                       <span className="text-xs text-gray-400">
                         {p.author} · {timeAgo(p.createdAt)} · 중보 {p.prayCount}
                       </span>
+                      {p.isOfficial && (
+                        <span className="text-xs font-semibold text-primary-700">
+                          교회
+                        </span>
+                      )}
                       {hidden && (
                         <span className="text-xs font-semibold text-rose-600">
                           숨김

@@ -15,6 +15,7 @@ export interface PrayerItem {
   category: string;
   content: string;
   prayCount: number;
+  isOfficial?: boolean;
   createdAt: string;
 }
 
@@ -336,6 +337,11 @@ export default function PrayerWall({
                     >
                       {p.category}
                     </span>
+                    {p.isOfficial && (
+                      <span className="text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-200 px-2 py-0.5 rounded-full">
+                        교회 공동기도
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400">
                       {p.author} · {timeAgo(p.createdAt)}
                     </span>

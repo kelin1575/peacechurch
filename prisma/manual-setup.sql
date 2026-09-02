@@ -36,3 +36,8 @@ CREATE TABLE IF NOT EXISTS "News" (
 );
 
 CREATE INDEX IF NOT EXISTS "News_publishedAt_idx" ON "News" ("publishedAt");
+
+-- 나중에 추가된 칸들 (이미 표가 있어도 안전하게 붙습니다)
+ALTER TABLE "PrayerRequest" ADD COLUMN IF NOT EXISTS "isOfficial" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "News" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE "News" ADD COLUMN IF NOT EXISTS "sourceUrl" TEXT;

@@ -44,6 +44,7 @@ async function getPrayers(): Promise<{ prayers: PrayerItem[]; dbReady: boolean }
         category: r.category,
         content: r.content,
         prayCount: r.prayCount,
+        isOfficial: r.isOfficial,
         createdAt: r.createdAt.toISOString(),
       })),
       dbReady: true,

@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NEWS_CATEGORIES } from "@/lib/news";
+import { postDailyPrayer } from "@/lib/daily-prayer";
 
 /**
  * 관리자 화면 전용 동작들.
@@ -174,6 +175,10 @@ const SETUP_STATEMENTS = [
      CONSTRAINT "News_pkey" PRIMARY KEY ("id")
    )`,
   `CREATE INDEX IF NOT EXISTS "News_publishedAt_idx" ON "News" ("publishedAt")`,
+  // 이미 표가 있는 경우에도 나중에 추가된 칸이 붙도록 합니다.
+  `ALTER TABLE "PrayerRequest" ADD COLUMN IF NOT EXISTS "isOfficial" BOOLEAN NOT NULL DEFAULT false`,
+  `ALTER TABLE "News" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`,
+  `ALTER TABLE "News" ADD COLUMN IF NOT EXISTS "sourceUrl" TEXT`,
 ];
 
 export async function setupTables() {
@@ -197,4 +202,19 @@ export async function setupTables() {
   revalidatePath("/admin");
   revalidatePath("/");
   redirect("/admin?dbOk=1");
+}
+
+
+/**
+ * 오늘의 공동 기도제목을 지금 바로 올립니다.
+ * 평소에는 매일 아침 배치가 자동으로 하고, 이 버튼은 확인용입니다.
+ */
+export async function runDailyPrayer() {
+  const result = await postDailyPrayer();
+  revalidatePath("/prayer");
+  revalidatePath("/admin/prayers");
+  redirect(
+    "/admin/prayers?" +
+      (result.ok ? "ok=" : "error=") + encodeURIComponent(result.message)
+  );
 }
