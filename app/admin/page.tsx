@@ -9,11 +9,17 @@ export const dynamic = "force-dynamic";
 
 /** 기도의 벽·평안소식 표가 이미 만들어져 있는지 확인합니다. */
 async function getTableStatus() {
+  // count() 가 성공하면 표가 있는 것이고, 실패하면 아직 없는 것입니다.
+  // 건수까지 함께 돌려주어 화면에서 "정말 준비됐는지"를 눈으로 확인할 수 있게 합니다.
   const [prayer, news] = await Promise.all([
-    prisma.prayerRequest.count().then(() => true).catch(() => false),
-    prisma.news.count().then(() => true).catch(() => false),
+    prisma.prayerRequest.count().then((n) => n).catch(() => null),
+    prisma.news.count().then((n) => n).catch(() => null),
   ]);
-  return { prayer, news, ready: prayer && news };
+  return {
+    prayer,
+    news,
+    ready: prayer !== null && news !== null,
+  };
 }
 
 async function getStats() {
@@ -124,6 +130,18 @@ export default async function AdminPage({
           </div>
         )}
 
+        {tables.ready && (
+          <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-olive-200 bg-olive-50 px-5 py-3.5 text-sm text-olive-800">
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+              데이터베이스 준비 완료
+            </span>
+            <span>기도의 벽 · 기도제목 {tables.prayer}건</span>
+            <span>평안소식 · 소식 {tables.news}건</span>
+            <span className="text-olive-600">더 하실 일은 없습니다.</span>
+          </div>
+        )}
+
         {!tables.ready && (
           <div className="mb-8 rounded-xl border-2 border-gold-200 bg-gold-50 p-5">
             <div className="flex items-start gap-3">
@@ -146,8 +164,8 @@ export default async function AdminPage({
                   </button>
                 </form>
                 <p className="text-xs text-gold-700 mt-3">
-                  현재 상태 · 기도의 벽 {tables.prayer ? "준비됨" : "없음"} ·
-                  평안소식 {tables.news ? "준비됨" : "없음"}
+                  현재 상태 · 기도의 벽 {tables.prayer !== null ? "준비됨" : "없음"} ·
+                  평안소식 {tables.news !== null ? "준비됨" : "없음"}
                 </p>
               </div>
             </div>
