@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { LayoutDashboard, BookOpen, MessageSquare, Youtube, Calendar, Plus, List } from "lucide-react";
+import { LayoutDashboard, BookOpen, MessageSquare, Youtube, Calendar, Plus, List, HeartHandshake, Megaphone } from "lucide-react";
 import YoutubeSyncButton from "@/components/admin/YoutubeSyncButton";
 import DailySyncButton from "@/components/admin/DailySyncButton";
 
@@ -117,6 +117,22 @@ export default async function AdminPage() {
               >
                 <List className="w-5 h-5" />
                 묵상 목록 관리
+              </Link>
+
+              <Link
+                href="/admin/prayers"
+                className="w-full flex items-center gap-3 p-3 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors text-sm font-medium"
+              >
+                <HeartHandshake className="w-5 h-5" />
+                기도의 벽 관리
+              </Link>
+
+              <Link
+                href="/admin/news"
+                className="w-full flex items-center gap-3 p-3 bg-gold-50 text-gold-700 rounded-lg hover:bg-gold-100 transition-colors text-sm font-medium"
+              >
+                <Megaphone className="w-5 h-5" />
+                평안소식 관리
               </Link>
 
               <Link

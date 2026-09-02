@@ -143,22 +143,22 @@ export default async function DevotionalPage({
 
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white py-12">
+        <div className="bg-gradient-to-br from-olive-900 via-olive-800 to-olive-700 text-white py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav aria-label="breadcrumb" className="flex items-center gap-2 text-green-300 text-sm mb-4">
+            <nav aria-label="breadcrumb" className="flex items-center gap-2 text-olive-300 text-sm mb-4">
               <a href="/" className="hover:text-white transition-colors">홈</a>
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
               <span className="text-white">매일 묵상</span>
             </nav>
             <div className="flex items-center gap-3 mb-2">
-              <BookOpen className="w-8 h-8 text-green-300" aria-hidden="true" />
+              <BookOpen className="w-8 h-8 text-olive-300" aria-hidden="true" />
               <h1 className="text-3xl md:text-4xl font-bold">매일 묵상</h1>
             </div>
-            <time dateTime={resolvedDate.toISOString()} className="text-green-200">
+            <time dateTime={resolvedDate.toISOString()} className="text-olive-200">
               {formatDate(resolvedDate)}
             </time>
             {isMock && (
-              <p className="text-green-300 text-sm mt-1">
+              <p className="text-olive-300 text-sm mt-1">
                 이 날의 묵상이 아직 등록되지 않았습니다.
               </p>
             )}
@@ -174,7 +174,7 @@ export default async function DevotionalPage({
                 <p className="text-primary-300 text-xs font-semibold uppercase tracking-wider mb-1">
                   오늘의 본문 · 개역개정
                 </p>
-                <p className="text-gold-400 font-bold text-2xl mb-1">
+                <p className="scripture text-gold-300 font-bold text-2xl mb-1">
                   {devotional.scripture}
                 </p>
                 <h2 className="text-white font-bold text-xl">
@@ -185,7 +185,7 @@ export default async function DevotionalPage({
               {/* Content */}
               <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 mb-5">
-                  <span className="w-1 h-7 bg-green-500 rounded-full" aria-hidden="true" />
+                  <span className="w-1 h-7 bg-olive-500 rounded-full" aria-hidden="true" />
                   <h3 className="font-bold text-gray-900 text-lg">오늘의 묵상</h3>
                 </div>
                 <div className="prose prose-gray max-w-none">
@@ -199,12 +199,12 @@ export default async function DevotionalPage({
 
               {/* Prayer */}
               {devotional.prayer && (
-                <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
+                <div className="bg-gold-50 rounded-2xl p-6 border border-gold-100">
                   <div className="flex items-center gap-2 mb-4">
-                    <Heart className="w-5 h-5 text-amber-600 fill-amber-200" aria-hidden="true" />
-                    <h3 className="font-bold text-amber-800 text-lg">오늘의 기도</h3>
+                    <Heart className="w-5 h-5 text-gold-600 fill-gold-200" aria-hidden="true" />
+                    <h3 className="font-bold text-gold-800 text-lg">오늘의 기도</h3>
                   </div>
-                  <p className="text-amber-900 leading-relaxed italic">{devotional.prayer}</p>
+                  <p className="scripture text-gold-900 leading-relaxed">{devotional.prayer}</p>
                 </div>
               )}
 
@@ -290,7 +290,7 @@ export default async function DevotionalPage({
               {/* Recent devotionals */}
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="w-5 h-5 text-green-600" aria-hidden="true" />
+                  <Calendar className="w-5 h-5 text-olive-600" aria-hidden="true" />
                   <h3 className="font-semibold text-gray-900">최근 묵상</h3>
                 </div>
                 {recentDevotionals.length > 0 ? (
@@ -304,7 +304,7 @@ export default async function DevotionalPage({
                             href={`/devotional?date=${dParam}`}
                             className={`block p-2.5 rounded-lg transition-colors group ${
                               isActive
-                                ? "bg-green-50 border border-green-200"
+                                ? "bg-olive-50 border border-olive-200"
                                 : "hover:bg-gray-50"
                             }`}
                           >
@@ -312,11 +312,11 @@ export default async function DevotionalPage({
                               {formatDateShort(d.date)}
                             </p>
                             <p className={`text-sm font-medium line-clamp-1 transition-colors ${
-                              isActive ? "text-green-700" : "text-gray-700 group-hover:text-primary-700"
+                              isActive ? "text-olive-700" : "text-gray-700 group-hover:text-primary-700"
                             }`}>
                               {d.title}
                             </p>
-                            <p className="text-xs text-green-600 mt-0.5">{d.scripture}</p>
+                            <p className="text-xs text-olive-600 mt-0.5">{d.scripture}</p>
                           </Link>
                         </li>
                       );

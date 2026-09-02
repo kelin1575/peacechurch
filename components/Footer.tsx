@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { MapPin, Phone, Mail, Youtube, Clock } from "lucide-react";
+import ChurchLogo from "@/components/ChurchLogo";
 
 const QUICK_LINKS = [
   { label: "교회소개", href: "/about" },
+  { label: "처음 오신 분", href: "/visit" },
   { label: "예배 설교", href: "/sermons" },
   { label: "매일 묵상", href: "/devotional" },
+  { label: "기도의 벽", href: "/prayer" },
+  { label: "평안소식", href: "/news" },
   { label: "성경 찾기 (개역개정)", href: "/bible" },
   { label: "찬송가", href: "/hymnal" },
   { label: "자주 묻는 질문", href: "/faq" },
-  { label: "새가족등록", href: "/about#contact" },
 ];
 
 export default function Footer() {
@@ -23,14 +26,7 @@ export default function Footer() {
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center mb-5" aria-label="수원평안교회 홈">
               <div className="bg-white rounded-lg px-3 py-2 inline-flex items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://peacechurch.kr/UserData/pyunganch/Layouts/pyunganch2025_Layout/Images/1_logo_2.png"
-                  alt="수원평안교회 PEACE CHURCH"
-                  height={36}
-                  className="h-9 w-auto"
-                  onError={(e) => { (e.target as HTMLImageElement).src = "/logo.svg"; }}
-                />
+                <ChurchLogo className="h-9 w-auto" />
               </div>
             </Link>
             <p className="text-blue-200 text-sm leading-relaxed mb-4">
