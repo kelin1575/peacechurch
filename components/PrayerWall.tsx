@@ -132,6 +132,8 @@ export default function PrayerWall({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* ── 기도제목 올리기 ── */}
       <aside className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start space-y-4">
+        {/* 표가 아직 없으면 눌러도 실패할 폼을 보여주지 않습니다 */}
+        {dbReady && (
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl border border-gray-200 shadow-soft p-5"
@@ -247,6 +249,7 @@ export default function PrayerWall({
             익명으로 올려 주세요. 개인정보(연락처·주소 등)는 적지 말아 주세요.
           </p>
         </form>
+        )}
 
         {totalPrayers > 0 && (
           <div className="bg-primary-800 text-white rounded-2xl p-5">
@@ -296,9 +299,8 @@ export default function PrayerWall({
               기도의 벽을 준비하고 있습니다
             </p>
             <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">
-              데이터베이스 설정이 아직 반영되지 않았습니다.
-              관리자가 <code className="text-primary-700">npx prisma db push</code>를
-              한 번 실행하면 바로 열립니다.
+              곧 열어드리겠습니다. 그동안 기도가 필요하시면
+              교회로 연락 주세요. 함께 기도하겠습니다.
             </p>
           </div>
         ) : visible.length === 0 ? (

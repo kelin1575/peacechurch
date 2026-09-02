@@ -45,8 +45,11 @@ export default async function AdminPrayersPage() {
 
         {prayers === null && (
           <div className="mb-6 rounded-xl border border-gold-200 bg-gold-50 p-4 text-sm text-gold-800">
-            <strong>PrayerRequest 표가 아직 없습니다.</strong> 터미널에서{" "}
-            <code className="font-mono">npx prisma db push</code>를 한 번 실행해 주세요.
+            <strong>기도제목을 저장할 표가 아직 없습니다.</strong>{" "}
+            <Link href="/admin" className="font-semibold underline underline-offset-2">
+              관리자 홈
+            </Link>
+            의 &ldquo;표 만들기&rdquo; 버튼을 한 번 눌러 주세요.
           </div>
         )}
 

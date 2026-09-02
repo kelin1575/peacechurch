@@ -135,8 +135,6 @@ export default async function AdminPage({
                 <p className="text-sm text-gold-800 leading-relaxed mb-4">
                   두 기능이 쓸 표를 데이터베이스에 만듭니다. 기존 설교·묵상·댓글은
                   전혀 건드리지 않고, 여러 번 눌러도 안전합니다.
-                  터미널에서 <code className="font-mono">npx prisma db push</code>를
-                  실행하는 것과 같은 일을 합니다.
                 </p>
                 <form action={setupTables}>
                   <button

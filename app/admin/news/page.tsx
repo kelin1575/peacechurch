@@ -55,9 +55,11 @@ export default async function AdminNewsPage({
 
         {items === null && (
           <div className="mb-6 rounded-xl border border-gold-200 bg-gold-50 p-4 text-sm text-gold-800">
-            <strong>News 표가 아직 없습니다.</strong> 터미널에서{" "}
-            <code className="font-mono">npx prisma db push</code>를 한 번 실행하면
-            소식 등록이 열립니다.
+            <strong>소식을 저장할 표가 아직 없습니다.</strong>{" "}
+            <Link href="/admin" className="font-semibold underline underline-offset-2">
+              관리자 홈
+            </Link>
+            의 &ldquo;표 만들기&rdquo; 버튼을 한 번 누르시면 소식 등록이 열립니다.
           </div>
         )}
 

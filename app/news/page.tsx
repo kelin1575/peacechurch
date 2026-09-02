@@ -103,9 +103,8 @@ export default async function NewsPage() {
                     소식 게시판을 준비하고 있습니다
                   </p>
                   <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">
-                    데이터베이스 설정이 아직 반영되지 않았습니다. 관리자가{" "}
-                    <code className="text-primary-700">npx prisma db push</code>를 한 번
-                    실행하면 바로 열립니다.
+                    곧 교회 소식을 이곳에서 전해드리겠습니다.
+                    그동안은 주보와 주일 광고로 안내드립니다.
                   </p>
                 </div>
               ) : items.length === 0 ? (
@@ -118,7 +117,7 @@ export default async function NewsPage() {
                     아직 등록된 소식이 없습니다
                   </p>
                   <p className="text-sm text-gray-500">
-                    관리자 페이지에서 첫 소식을 등록해 주세요.
+                    새로운 소식이 있으면 이곳에 올려드리겠습니다.
                   </p>
                 </div>
               ) : (
