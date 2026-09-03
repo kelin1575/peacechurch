@@ -44,26 +44,16 @@ export default function BibleSearch({ bibleBooks, famousVerses }: BibleSearchPro
     setSelectedChapter(null);
   };
 
-  const getBibleGatewayUrl = (book: BibleBook, chapter: number) => {
-    // Map Korean book names to YouVersion/Bible.com URL slugs
-    const bookSlugMap: Record<string, string> = {
-      gen: "GEN", exo: "EXO", lev: "LEV", num: "NUM", deu: "DEU",
-      jos: "JOS", jdg: "JDG", rut: "RUT", "1sa": "1SA", "2sa": "2SA",
-      "1ki": "1KI", "2ki": "2KI", "1ch": "1CH", "2ch": "2CH",
-      ezr: "EZR", neh: "NEH", est: "EST", job: "JOB", psa: "PSA",
-      pro: "PRO", ecc: "ECC", sng: "SNG", isa: "ISA", jer: "JER",
-      lam: "LAM", ezk: "EZK", dan: "DAN", hos: "HOS", jol: "JOL",
-      amo: "AMO", oba: "OBA", jon: "JON", mic: "MIC", nam: "NAM",
-      hab: "HAB", zep: "ZEP", hag: "HAG", zec: "ZEC", mal: "MAL",
-      mat: "MAT", mrk: "MRK", luk: "LUK", jhn: "JHN", act: "ACT",
-      rom: "ROM", "1co": "1CO", "2co": "2CO", gal: "GAL", eph: "EPH",
-      php: "PHP", col: "COL", "1th": "1TH", "2th": "2TH", "1ti": "1TI",
-      "2ti": "2TI", tit: "TIT", phm: "PHM", heb: "HEB", jas: "JAS",
-      "1pe": "1PE", "2pe": "2PE", "1jn": "1JN", "2jn": "2JN",
-      "3jn": "3JN", jud: "JUD", rev: "REV",
-    };
-    const slug = bookSlugMap[book.id] || book.id.toUpperCase();
-    return `https://www.bible.com/ko/bible/1//${slug}.${chapter}.NKRV`;
+  /**
+   * 대한성서공회(개역개정의 실제 저작권자·발행처) 온라인 성경 읽기 페이지.
+   * https://www.bskorea.or.kr — book 코드가 이 프로젝트에서 쓰는 book.id(gen, jhn, 1co 등)와
+   * 그대로 일치해 별도 매핑표가 필요 없습니다. version=GAE 가 개역개정을 가리킵니다.
+   *
+   * 예전에는 bible.com(YouVersion)으로 연결했는데, 버전 번호(1)가 실제로는 영어 KJV를
+   * 가리키고 있어 한글이 아니라 영어로 열리는 문제가 있었습니다.
+   */
+  const getBibleReadingUrl = (book: BibleBook, chapter: number) => {
+    return `https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&book=${book.id}&chap=${chapter}`;
   };
 
   return (
@@ -175,10 +165,10 @@ export default function BibleSearch({ bibleBooks, famousVerses }: BibleSearchPro
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    Bible.com에서 개역개정 성경을 읽으세요
+                    대한성서공회에서 개역개정 성경을 읽으세요
                   </p>
                   <a
-                    href={getBibleGatewayUrl(selectedBook, selectedChapter)}
+                    href={getBibleReadingUrl(selectedBook, selectedChapter)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-primary text-sm py-2.5 w-full justify-center"
