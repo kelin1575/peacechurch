@@ -257,19 +257,30 @@ function rankBySize(urls: string[]): string[] {
   return [...all].sort((a, b) => sizeRank(a) - sizeRank(b));
 }
 
-/** 그 주소에 파일이 실제로 있는지 봅니다. */
+/**
+ * 그 주소에 파일이 실제로 있는지 봅니다.
+ * HEAD 를 막아 둔 서버가 흔해서, 막히면 첫 1바이트만 GET 해서 다시 봅니다.
+ */
 async function imageExists(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, {
-      method: "HEAD",
-      headers: { "User-Agent": UA },
-      cache: "no-store",
-      signal: AbortSignal.timeout(8000),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  const attempt = async (init: RequestInit) => {
+    try {
+      const res = await fetch(url, {
+        ...init,
+        headers: { "User-Agent": UA, ...(init.headers ?? {}) },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      });
+      return res.ok ? true : res.status;
+    } catch {
+      return 0;
+    }
+  };
+
+  const head = await attempt({ method: "HEAD" });
+  if (head === true) return true;
+  // 405(허용 안 함)·403 처럼 HEAD 만 막힌 경우를 걸러내기 위해 한 번 더
+  const ranged = await attempt({ method: "GET", headers: { Range: "bytes=0-0" } });
+  return ranged === true;
 }
 
 /**
@@ -278,20 +289,26 @@ async function imageExists(url: string): Promise<boolean> {
  * 썸네일 주소에서 이름을 깎아 더 큰 주소를 만들어내지만, 그 파일이 늘
  * 있는 것은 아닙니다(이 CMS 는 resized_ 까지만 두는 경우가 많습니다).
  * 확인하지 않고 고르면 깨진 그림이 올라갑니다.
+ *
+ * 확인이 전부 실패하면(연결 문제, HEAD·GET 모두 막힘) 깎아 만든 주소가 아니라
+ * 페이지에 실제로 적혀 있던 주소 중 가장 큰 것으로 돌아갑니다.
+ * 추측한 주소보다 눈으로 본 주소가 안전합니다.
  */
 async function pickExistingImage(
-  ranked: string[]
-): Promise<{ url?: string; checked: string[] }> {
+  ranked: string[],
+  observed: string[]
+): Promise<{ url?: string; checked: string[]; verified: boolean }> {
   const checked: string[] = [];
   for (const url of ranked.slice(0, 4)) {
     const ok = await imageExists(url);
     checked.push(`${ok ? "있음" : "없음"} ${url.split("/").pop()}`);
-    if (ok) return { url, checked };
+    if (ok) return { url, checked, verified: true };
   }
-  // 하나도 확인되지 않으면(연결 문제 등) 가장 큰 것을 그대로 씁니다.
-  return { url: ranked[0], checked };
-}
 
+  const fallback = [...observed].sort((a, b) => sizeRank(a) - sizeRank(b))[0];
+  checked.push("확인 실패 → 페이지에 있던 주소 사용");
+  return { url: fallback ?? ranked[0], checked, verified: false };
+}
 
 /**
  * 같은 게시판을 가리키는 주소 변형들.
@@ -428,8 +445,9 @@ export async function fetchLatestBulletin(
   if (!postId && pool.length) postId = pool[0].postId;
 
   // 가장 큰 그림을 고릅니다.
-  const ranked = rankBySize(pool.map((a) => a.url));
-  const picked = await pickExistingImage(ranked);
+  const observed = pool.map((a) => a.url);
+  const ranked = rankBySize(observed);
+  const picked = await pickExistingImage(ranked, observed);
   const imageUrl = picked.url;
   push(
     "주보 이미지 찾기",
