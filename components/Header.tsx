@@ -23,17 +23,19 @@ const navItems = [
     children: [
       { label: "전체 설교", href: "/sermons" },
       { label: "주일예배", href: "/sermons?category=주일예배" },
-      { label: "수요예배", href: "/sermons?category=수요예배" },
-      { label: "새벽기도", href: "/sermons?category=새벽기도회" },
-      { label: "특별집회", href: "/sermons?category=특별집회" },
+      { label: "홍보영상", href: "/sermons?category=홍보영상" },
+      { label: "미니홈피", href: "/sermons?category=미니홈피" },
     ],
   },
   {
     label: "다음세대",
-    href: "/sermons?category=어린이예배",
+    href: "/sermons?category=아동부",
     children: [
-      { label: "어린이예배", href: "/sermons?category=어린이예배" },
-      { label: "청년예배", href: "/sermons?category=청년예배" },
+      { label: "유아유치부", href: "/sermons?category=유아유치부" },
+      { label: "아동부", href: "/sermons?category=아동부" },
+      { label: "청소년부", href: "/sermons?category=청소년부" },
+      { label: "어와나", href: "/sermons?category=어와나" },
+      { label: "해피밀", href: "/sermons?category=해피밀" },
     ],
   },
   {

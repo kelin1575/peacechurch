@@ -13,7 +13,10 @@ interface Sermon {
   category: string;
 }
 
-const CATEGORIES = ["주일예배", "특별집회", "수요예배", "새벽기도"];
+const CATEGORIES = [
+  "주일예배", "해피밀", "홍보영상", "아동부", "유아유치부",
+  "청소년부", "미니홈피", "어와나", "Shorts",
+];
 
 export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
   const router = useRouter();

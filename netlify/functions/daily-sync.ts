@@ -27,9 +27,31 @@ function todayKST(): Date {
 
 // ─── YouTube 동기화 ──────────────────────────────────────────────────────────
 
-const WORSHIP_GROUPS = [
+/**
+ * 채널에서 실제로 쓰는 대괄호 태그 → 분류.
+ * lib/sermonParser.ts 와 같은 규칙입니다. 이 파일은 Netlify
+ * 예약 함수용으로 별도 번들되어 그쪽 모듈을 import 하지 못해 부득이
+ * 복사해 둡니다 — 분류 규칙을 바꿀 때는 두 파일을 함께 고쳐야 합니다.
+ */
+const CATEGORY_RULES: { category: string; keywords: string[] }[] = [
+  { category: "해피밀", keywords: ["해피밀"] },
+  { category: "홍보영상", keywords: ["홍보영상", "소개영상", "후기영상"] },
+  { category: "아동부", keywords: ["아동부"] },
+  { category: "유아유치부", keywords: ["유아유치부", "유아부", "유치부"] },
+  { category: "청소년부", keywords: ["청소년부", "중고등부"] },
+  { category: "어와나", keywords: ["어와나", "AWANA", "Awana"] },
+  { category: "미니홈피", keywords: ["미니홈피"] },
+  { category: "Shorts", keywords: ["Shorts", "SHORTS", "shorts", "쇼츠"] },
+  {
+    category: "주일예배",
+    keywords: ["주일예배", "주일1부예배", "주일2부예배", "주일3부예배", "주일1부", "주일2부", "주일3부"],
+  },
+];
+
+// 대괄호 태그가 없는 예전 제목을 위한 예비 규칙 (더 구체적인 것 먼저)
+const LEGACY_WORSHIP_GROUPS = [
   "주일2부예배", "주일1부예배", "주일3부예배", "주일예배",
-  "수요예배", "금요예배", "새벽예배", "특별예배",
+  "수요예배", "금요예배", "새벽기도회", "새벽예배", "특별예배",
   "청년예배", "청소년예배", "어린이예배",
   "부흥회", "기도회", "헌신예배",
 ];
@@ -58,15 +80,26 @@ function parseTitle(raw: string): ParsedTitle {
   // 교회명 제거
   s = s.replace(/수원평안교회|평안교회/g, "").trim();
 
-  // 예배 구분 추출
-  let category = "주일예배";
-  for (const g of WORSHIP_GROUPS) {
-    if (s.includes(g)) {
-      category = g;
-      s = s.replace(g, "").trim();
+  // 분류 추출 — 새 대괄호 태그 방식을 먼저 시도하고, 없으면 예전 방식으로 폴백
+  let category: string | null = null;
+  for (const rule of CATEGORY_RULES) {
+    const hit = rule.keywords.find((kw) => s.includes(kw));
+    if (hit) {
+      category = rule.category;
+      s = s.replace(hit, "").trim();
       break;
     }
   }
+  if (!category) {
+    for (const g of LEGACY_WORSHIP_GROUPS) {
+      if (s.includes(g)) {
+        category = g.startsWith("주일") && g.endsWith("부예배") ? "주일예배" : g;
+        s = s.replace(g, "").trim();
+        break;
+      }
+    }
+  }
+  if (!category) category = "주일예배";
 
   // 담당자 추출
   const ministerRe = /([가-힣]{2,5})\s*(목사|전도사|강도사|장로|선교사)/;
