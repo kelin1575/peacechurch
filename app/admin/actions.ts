@@ -11,6 +11,7 @@ import {
 import { prisma } from "@/lib/db";
 import { NEWS_CATEGORIES } from "@/lib/news";
 import { postDailyPrayer } from "@/lib/daily-prayer";
+import { isAllowedImageHost } from "@/lib/news";
 
 /**
  * 관리자 화면 전용 동작들.
@@ -26,15 +27,30 @@ export async function createNews(formData: FormData) {
     ? rawCategory
     : "교회소식";
   const isPinned = formData.get("isPinned") === "on";
+  const imageUrl = String(formData.get("imageUrl") ?? "").trim() || null;
+  const sourceUrl = String(formData.get("sourceUrl") ?? "").trim() || null;
 
   if (!title || !content) {
     redirect("/admin/news?error=" + encodeURIComponent("제목과 내용을 모두 입력해 주세요."));
   }
 
+  // 이미지 주소는 교회 홈페이지가 쓰는 곳만 받습니다.
+  // 아무 주소나 허용하면 외부 이미지가 교회 페이지에 실릴 수 있습니다.
+  if (imageUrl && !isAllowedImageHost(imageUrl)) {
+    redirect(
+      "/admin/news?error=" +
+        encodeURIComponent(
+          "이미지 주소는 peacechurch.kr 또는 data.dimode.co.kr 의 것만 넣으실 수 있습니다."
+        )
+    );
+  }
+
   let saved = false;
   let message = "";
   try {
-    await prisma.news.create({ data: { title, content, category, isPinned } });
+    await prisma.news.create({
+      data: { title, content, category, isPinned, imageUrl, sourceUrl },
+    });
     saved = true;
   } catch (error) {
     console.error("createNews error:", error);

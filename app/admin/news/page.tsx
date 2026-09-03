@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronLeft, Megaphone, Pin, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { ChevronLeft, Megaphone, Pin, Trash2, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { NEWS_CATEGORIES, newsCategoryStyle } from "@/lib/news";
 import { formatDate } from "@/lib/utils";
@@ -62,6 +63,23 @@ export default async function AdminNewsPage({
             의 &ldquo;표 만들기&rdquo; 버튼을 한 번 누르시면 소식 등록이 열립니다.
           </div>
         )}
+
+        {/* 주보에서 자동으로 읽어오기 */}
+        <div className="mb-8 rounded-xl border border-primary-200 bg-primary-50 p-5 flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-[240px]">
+            <p className="font-semibold text-primary-900 text-sm mb-1">
+              주보에서 교회소식 가져오기
+            </p>
+            <p className="text-sm text-primary-800 leading-relaxed">
+              교회 홈페이지의 이번 주 주보를 읽어 교회소식과 주보 이미지를 뽑아옵니다.
+              미리보기에서 확인한 뒤 등록하시므로, 확인 없이 올라가는 일은 없습니다.
+            </p>
+          </div>
+          <Link href="/admin/news/preview" className="btn-primary text-sm py-2.5">
+            <FileText className="w-4 h-4" aria-hidden="true" />
+            주보 미리보기
+          </Link>
+        </div>
 
         {/* 새 소식 작성 */}
         <form
@@ -132,6 +150,46 @@ export default async function AdminNewsPage({
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-gray-100">
+            <div>
+              <label
+                htmlFor="news-image"
+                className="block text-sm font-medium text-gray-700 mb-1.5 mt-4"
+              >
+                주보 이미지 주소 <span className="text-gray-400 font-normal">(선택)</span>
+              </label>
+              <input
+                id="news-image"
+                name="imageUrl"
+                type="url"
+                className="input-field text-sm"
+                placeholder="http://data.dimode.co.kr/UserData/pyunganch/files/46/..."
+              />
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                교회 홈페이지 주보 이미지를 오른쪽 클릭 → &ldquo;이미지 주소 복사&rdquo; 하여
+                붙여넣으세요. peacechurch.kr 또는 data.dimode.co.kr 주소만 받습니다.
+              </p>
+            </div>
+            <div>
+              <label
+                htmlFor="news-source"
+                className="block text-sm font-medium text-gray-700 mb-1.5 mt-4"
+              >
+                원본 주보 글 주소 <span className="text-gray-400 font-normal">(선택)</span>
+              </label>
+              <input
+                id="news-source"
+                name="sourceUrl"
+                type="url"
+                className="input-field text-sm"
+                placeholder="https://www.peacechurch.kr/Board/Index/46"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                넣으시면 소식 아래에 &ldquo;원문 보기&rdquo; 링크가 붙습니다.
+              </p>
+            </div>
+          </div>
+
           <button type="submit" className="btn-primary">
             소식 등록
           </button>
@@ -149,6 +207,17 @@ export default async function AdminNewsPage({
                 key={n.id}
                 className="bg-white rounded-xl border border-gray-200 p-5 flex gap-4"
               >
+                {n.imageUrl && (
+                  <div className="w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 relative">
+                    <Image
+                      src={n.imageUrl}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     {n.isPinned && (

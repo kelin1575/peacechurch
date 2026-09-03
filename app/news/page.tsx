@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight, Megaphone, Pin, Calendar } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { BreadcrumbSchema } from "@/components/JsonLd";
@@ -38,6 +39,8 @@ interface NewsRow {
   category: string;
   isPinned: boolean;
   publishedAt: Date;
+  imageUrl: string | null;
+  sourceUrl: string | null;
 }
 
 async function getNews(): Promise<{ items: NewsRow[]; dbReady: boolean }> {
@@ -159,6 +162,39 @@ export default async function NewsPage() {
                       <div className="text-gray-600 leading-relaxed whitespace-pre-wrap text-[15px]">
                         {n.content}
                       </div>
+
+                      {/* 주보 이미지 — 원본 비율 그대로, 눌러서 크게 볼 수 있게 */}
+                      {n.imageUrl && (
+                        <a
+                          href={n.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-5 block rounded-xl overflow-hidden border border-gray-200 bg-gray-50 hover:border-primary-300 transition-colors group"
+                        >
+                          <Image
+                            src={n.imageUrl}
+                            alt={`${n.title} 주보 이미지`}
+                            width={1200}
+                            height={1700}
+                            sizes="(max-width: 768px) 100vw, 700px"
+                            className="w-full h-auto"
+                          />
+                          <span className="block px-4 py-2.5 text-xs text-gray-500 bg-white border-t border-gray-100 group-hover:text-primary-700 transition-colors">
+                            주보 이미지 · 눌러서 원본 크기로 보기
+                          </span>
+                        </a>
+                      )}
+
+                      {n.sourceUrl && (
+                        <a
+                          href={n.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center gap-1 text-sm text-primary-700 font-medium hover:underline"
+                        >
+                          교회 홈페이지에서 원문 보기 →
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>
