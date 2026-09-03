@@ -35,7 +35,11 @@ export default function BatchGenerateButton() {
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const response = await fetch("/api/sermons/generate-all", { method: "POST" });
-        if (!response.ok) throw new Error("일괄 생성 실패");
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.error || `일괄 생성 실패 (HTTP ${response.status})`);
+        }
 
         const data: GenerateAllResponse = await response.json();
 
@@ -53,8 +57,11 @@ export default function BatchGenerateButton() {
         if (data.success === 0) {
           stalls++;
           if (stalls >= MAX_STALLS) {
+            const detail = data.errors?.[0];
             throw new Error(
-              `${totalFailed}개가 계속 실패해 중단했습니다. 잠시 후 다시 시도해주세요.`
+              detail
+                ? `계속 실패합니다: ${detail}`
+                : `${totalFailed}개가 계속 실패해 중단했습니다. 잠시 후 다시 시도해주세요.`
             );
           }
         } else {

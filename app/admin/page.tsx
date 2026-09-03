@@ -124,6 +124,7 @@ export default async function AdminPage({
     ]);
 
   const debugSecret = process.env.DEBUG_SECRET || "";
+  const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -212,6 +213,22 @@ export default async function AdminPage({
                   모자란 것 · {tables.missing.join(" / ")}
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {!hasAnthropicKey && (
+          <div className="mb-8 flex items-start gap-3 rounded-xl border-2 border-gold-200 bg-gold-50 p-5 text-sm text-gold-800">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-gold-700" aria-hidden="true" />
+            <div>
+              <p className="font-bold text-gold-900 mb-1">
+                AI 자동 생성이 동작하지 않습니다
+              </p>
+              <p className="leading-relaxed">
+                설교 요약/해석 자동 생성, 매일 묵상 자동 생성이 <code className="bg-white/60 px-1 rounded">ANTHROPIC_API_KEY</code>{" "}
+                환경변수를 필요로 합니다. Vercel 대시보드 → 프로젝트 → Settings → Environment
+                Variables 에서 값을 추가하고 재배포하면 해결됩니다.
+              </p>
             </div>
           </div>
         )}
