@@ -221,11 +221,15 @@ export default async function BulletinPreviewPage({
               <Image
                 src={result.imageUrl}
                 alt="주보 미리보기"
-                width={1200}
-                height={1700}
+                width={1600}
+                height={2260}
+                quality={90}
+                sizes="(max-width: 768px) 100vw, 900px"
                 className="w-full h-auto rounded-lg border border-gray-100"
-                unoptimized
               />
+              <p className="mt-3 text-xs text-gray-400 break-all">
+                {result.imageUrl}
+              </p>
             </div>
           </section>
         )}

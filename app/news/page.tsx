@@ -174,8 +174,9 @@ export default async function NewsPage() {
                           <Image
                             src={n.imageUrl}
                             alt={`${n.title} 주보 이미지`}
-                            width={1200}
-                            height={1700}
+                            width={1600}
+                            height={2260}
+                            quality={90}
                             sizes="(max-width: 768px) 100vw, 700px"
                             className="w-full h-auto"
                           />

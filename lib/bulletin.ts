@@ -164,16 +164,53 @@ function extractNewsSection(text: string): { content: string; matched: boolean }
   return { content: section.trim(), matched: true };
 }
 
-/** 여러 줄을 읽기 좋게 다듬습니다. */
+/** 메뉴·머리말·꼬리말을 걷어내고 글 본문으로 보이는 부분만 남깁니다. */
+function narrowToContent(html: string): { html: string; matched: boolean } {
+  // 머리말·꼬리말·메뉴는 통째로 버립니다.
+  let body = html
+    .replace(/<header[\s\S]*?<\/header>/gi, " ")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+    .replace(/<select[\s\S]*?<\/select>/gi, " ")
+    .replace(/<form[\s\S]*?<\/form>/gi, " ");
+
+  // 글 본문이 담기는 흔한 상자들
+  const containers = [
+    /<div[^>]*class="[^"]*(?:view_content|board_view|bbs_content|view_cont|contents_view)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<td[^>]*class="[^"]*(?:view_content|content)[^"]*"[^>]*>([\s\S]*?)<\/td>/i,
+    /<article[^>]*>([\s\S]*?)<\/article>/i,
+    /<div[^>]*id="[^"]*(?:content|container)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+  ];
+  for (const re of containers) {
+    const m = body.match(re);
+    if (m && m[1].length > 120) return { html: m[1], matched: true };
+  }
+  return { html: body, matched: false };
+}
+
+/** 메뉴 항목처럼 본문이 아닌 줄 */
+const JUNK_LINE =
+  /^(홈|home|로그인|로그아웃|회원가입|검색|목록|이전|다음|글쓰기|수정|삭제|답글|인쇄|공유|top|맨위로|더보기|전체보기|\d+|[<>«»·\-—|]+)$/i;
+
+/** 사람이 읽기 좋은 짧은 텍스트로 다듬습니다. */
 function tidy(text: string): string {
-  return text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((l) => (/^[·\-*•]/.test(l) ? l : l))
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .slice(0, 4000);
+  const seen = new Set<string>();
+  const lines: string[] = [];
+
+  for (const raw of text.split("\n")) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    if (!line) continue;
+    if (JUNK_LINE.test(line)) continue;
+    // 한 글자짜리 조각은 대개 메뉴가 부서진 것입니다.
+    if (line.length < 2) continue;
+    // 같은 줄이 여러 번 나오면 한 번만 (메뉴가 반복되는 경우)
+    const key = line.replace(/[\s·\-*•]/g, "");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(line.replace(/^[·\-*•]\s*/, "· "));
+  }
+
+  return lines.join("\n").slice(0, 1500).trim();
 }
 
 /** 상세 페이지 주소로 시도해 볼 후보들 */
@@ -185,6 +222,74 @@ function detailUrlCandidates(boardUrl: string, boardId: string, postId: string) 
     `${origin}/Board/Index/${boardId}/${postId}`,
     `${boardUrl}?idx=${postId}`,
   ];
+}
+
+
+/**
+ * 이 CMS 는 한 장을 세 벌로 만들어 둡니다.
+ *   files/46/22381/원본.jpg
+ *   files/46/22381/resized_원본.jpg        ← 화면용 (보통 이게 가장 큰 실제 파일)
+ *   files/46/22381/thumb/thumb_resized_원본.jpg  ← 목록용 작은 그림
+ * 목록 페이지에는 썸네일만 실리는 경우가 많아, 그대로 쓰면 흐릿하게 나옵니다.
+ */
+function sizeRank(url: string): number {
+  if (/\/thumb\/|thumb_/.test(url)) return 2; // 가장 작음
+  if (/\/resized_/.test(url)) return 1;
+  return 0; // 원본
+}
+
+/** 썸네일 주소에서 한 단계 큰 주소를 만들어 봅니다. */
+function upscaleCandidates(url: string): string[] {
+  const out = [url];
+  // .../thumb/thumb_resized_X.jpg → .../resized_X.jpg
+  const noThumb = url.replace(/\/thumb\/thumb_/, "/");
+  if (noThumb !== url) out.push(noThumb);
+  // .../resized_X.jpg → .../X.jpg
+  const noResized = noThumb.replace(/\/resized_/, "/");
+  if (noResized !== noThumb) out.push(noResized);
+  return out;
+}
+
+/** 큰 그림이 앞에 오도록 정리합니다(중복 제거 포함). */
+function rankBySize(urls: string[]): string[] {
+  const all = new Set<string>();
+  for (const u of urls) for (const c of upscaleCandidates(u)) all.add(c);
+  return [...all].sort((a, b) => sizeRank(a) - sizeRank(b));
+}
+
+/** 그 주소에 파일이 실제로 있는지 봅니다. */
+async function imageExists(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      headers: { "User-Agent": UA },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 큰 것부터 차례로 열어보고, 실제로 있는 첫 번째를 씁니다.
+ *
+ * 썸네일 주소에서 이름을 깎아 더 큰 주소를 만들어내지만, 그 파일이 늘
+ * 있는 것은 아닙니다(이 CMS 는 resized_ 까지만 두는 경우가 많습니다).
+ * 확인하지 않고 고르면 깨진 그림이 올라갑니다.
+ */
+async function pickExistingImage(
+  ranked: string[]
+): Promise<{ url?: string; checked: string[] }> {
+  const checked: string[] = [];
+  for (const url of ranked.slice(0, 4)) {
+    const ok = await imageExists(url);
+    checked.push(`${ok ? "있음" : "없음"} ${url.split("/").pop()}`);
+    if (ok) return { url, checked };
+  }
+  // 하나도 확인되지 않으면(연결 문제 등) 가장 큰 것을 그대로 씁니다.
+  return { url: ranked[0], checked };
 }
 
 export async function fetchLatestBulletin(
@@ -269,21 +374,30 @@ export async function fetchLatestBulletin(
   const pool = scoped.length ? scoped : attachments;
   if (!postId && pool.length) postId = pool[0].postId;
 
-  // 원본이 있으면 원본을, 없으면 축소본을 씁니다.
-  const original = pool.find((a) => !/\/resized_/.test(a.url));
-  const imageUrl = (original ?? pool[0])?.url;
+  // 가장 큰 그림을 고릅니다.
+  const ranked = rankBySize(pool.map((a) => a.url));
+  const picked = await pickExistingImage(ranked);
+  const imageUrl = picked.url;
   push(
     "주보 이미지 찾기",
-    pool.length
-      ? `${pool.length}개 발견 · 사용: ${imageUrl}`
+    ranked.length
+      ? `${pool.length}개 발견 → 큰 순서로 ${ranked.length}개 확인 (${picked.checked.join(", ")}) · 사용: ${imageUrl}`
       : "이미지를 찾지 못했습니다.",
-    pool.length > 0
+    ranked.length > 0
   );
 
   // ── 5. 본문 ──
-  const text = htmlToText(detailHtml);
+  const narrowed = narrowToContent(detailHtml);
+  const text = htmlToText(narrowed.html);
   const { content, matched } = extractNewsSection(text);
   const tidied = tidy(content);
+  push(
+    "본문 영역 좁히기",
+    narrowed.matched
+      ? "글 본문 상자를 찾아 메뉴·머리말을 걷어냈습니다."
+      : "본문 상자를 못 찾아 페이지 전체에서 정리했습니다.",
+    narrowed.matched
+  );
   push(
     "교회소식 부분 골라내기",
     matched
@@ -294,7 +408,7 @@ export async function fetchLatestBulletin(
 
   // ── 6. 게시해도 될 만큼 확실한가 ──
   const confident =
-    Boolean(imageUrl) && matched && tidied.length >= 40 && tidied.length <= 4000;
+    Boolean(imageUrl) && matched && tidied.length >= 40 && tidied.length <= 1500;
 
   const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const title = `${kstNow.getUTCFullYear()}년 ${kstNow.getUTCMonth() + 1}월 ${
@@ -309,7 +423,7 @@ export async function fetchLatestBulletin(
     imageUrl,
     sourceUrl,
     postId,
-    imageCandidates: pool.map((a) => a.url),
+    imageCandidates: ranked,
     steps,
     htmlSample: detailHtml.slice(0, 3000),
     message: confident
