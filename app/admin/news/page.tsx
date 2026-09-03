@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, Megaphone, Pin, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { NEWS_CATEGORIES, newsCategoryStyle } from "@/lib/news";
@@ -132,6 +133,46 @@ export default async function AdminNewsPage({
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-gray-100">
+            <div>
+              <label
+                htmlFor="news-image"
+                className="block text-sm font-medium text-gray-700 mb-1.5 mt-4"
+              >
+                주보 이미지 주소 <span className="text-gray-400 font-normal">(선택)</span>
+              </label>
+              <input
+                id="news-image"
+                name="imageUrl"
+                type="url"
+                className="input-field text-sm"
+                placeholder="http://data.dimode.co.kr/UserData/pyunganch/files/46/..."
+              />
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                교회 홈페이지 주보 이미지를 오른쪽 클릭 → &ldquo;이미지 주소 복사&rdquo; 하여
+                붙여넣으세요. peacechurch.kr 또는 data.dimode.co.kr 주소만 받습니다.
+              </p>
+            </div>
+            <div>
+              <label
+                htmlFor="news-source"
+                className="block text-sm font-medium text-gray-700 mb-1.5 mt-4"
+              >
+                원본 주보 글 주소 <span className="text-gray-400 font-normal">(선택)</span>
+              </label>
+              <input
+                id="news-source"
+                name="sourceUrl"
+                type="url"
+                className="input-field text-sm"
+                placeholder="https://www.peacechurch.kr/Board/Index/46"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                넣으시면 소식 아래에 &ldquo;원문 보기&rdquo; 링크가 붙습니다.
+              </p>
+            </div>
+          </div>
+
           <button type="submit" className="btn-primary">
             소식 등록
           </button>
@@ -149,6 +190,17 @@ export default async function AdminNewsPage({
                 key={n.id}
                 className="bg-white rounded-xl border border-gray-200 p-5 flex gap-4"
               >
+                {n.imageUrl && (
+                  <div className="w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 relative">
+                    <Image
+                      src={n.imageUrl}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     {n.isPinned && (
