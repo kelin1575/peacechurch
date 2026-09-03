@@ -15,7 +15,7 @@
  */
 
 export const DEFAULT_BOARD_URL =
-  process.env.BULLETIN_BOARD_URL || "https://www.peacechurch.kr/Board/Index/46";
+  process.env.BULLETIN_BOARD_URL || "http://peacechurch.kr/Board/Index/46";
 
 /** 주보 이미지가 올라가는 곳 */
 const IMAGE_HOST = "data.dimode.co.kr";
@@ -164,16 +164,53 @@ function extractNewsSection(text: string): { content: string; matched: boolean }
   return { content: section.trim(), matched: true };
 }
 
-/** 여러 줄을 읽기 좋게 다듬습니다. */
+/** 메뉴·머리말·꼬리말을 걷어내고 글 본문으로 보이는 부분만 남깁니다. */
+function narrowToContent(html: string): { html: string; matched: boolean } {
+  // 머리말·꼬리말·메뉴는 통째로 버립니다.
+  let body = html
+    .replace(/<header[\s\S]*?<\/header>/gi, " ")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+    .replace(/<select[\s\S]*?<\/select>/gi, " ")
+    .replace(/<form[\s\S]*?<\/form>/gi, " ");
+
+  // 글 본문이 담기는 흔한 상자들
+  const containers = [
+    /<div[^>]*class="[^"]*(?:view_content|board_view|bbs_content|view_cont|contents_view)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<td[^>]*class="[^"]*(?:view_content|content)[^"]*"[^>]*>([\s\S]*?)<\/td>/i,
+    /<article[^>]*>([\s\S]*?)<\/article>/i,
+    /<div[^>]*id="[^"]*(?:content|container)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+  ];
+  for (const re of containers) {
+    const m = body.match(re);
+    if (m && m[1].length > 120) return { html: m[1], matched: true };
+  }
+  return { html: body, matched: false };
+}
+
+/** 메뉴 항목처럼 본문이 아닌 줄 */
+const JUNK_LINE =
+  /^(홈|home|로그인|로그아웃|회원가입|검색|목록|이전|다음|글쓰기|수정|삭제|답글|인쇄|공유|top|맨위로|더보기|전체보기|\d+|[<>«»·\-—|]+)$/i;
+
+/** 사람이 읽기 좋은 짧은 텍스트로 다듬습니다. */
 function tidy(text: string): string {
-  return text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((l) => (/^[·\-*•]/.test(l) ? l : l))
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .slice(0, 4000);
+  const seen = new Set<string>();
+  const lines: string[] = [];
+
+  for (const raw of text.split("\n")) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    if (!line) continue;
+    if (JUNK_LINE.test(line)) continue;
+    // 한 글자짜리 조각은 대개 메뉴가 부서진 것입니다.
+    if (line.length < 2) continue;
+    // 같은 줄이 여러 번 나오면 한 번만 (메뉴가 반복되는 경우)
+    const key = line.replace(/[\s·\-*•]/g, "");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(line.replace(/^[·\-*•]\s*/, "· "));
+  }
+
+  return lines.join("\n").slice(0, 1500).trim();
 }
 
 /** 상세 페이지 주소로 시도해 볼 후보들 */
@@ -187,21 +224,159 @@ function detailUrlCandidates(boardUrl: string, boardId: string, postId: string) 
   ];
 }
 
+
+/**
+ * 이 CMS 는 한 장을 세 벌로 만들어 둡니다.
+ *   files/46/22381/원본.jpg
+ *   files/46/22381/resized_원본.jpg        ← 화면용 (보통 이게 가장 큰 실제 파일)
+ *   files/46/22381/thumb/thumb_resized_원본.jpg  ← 목록용 작은 그림
+ * 목록 페이지에는 썸네일만 실리는 경우가 많아, 그대로 쓰면 흐릿하게 나옵니다.
+ */
+function sizeRank(url: string): number {
+  if (/\/thumb\/|thumb_/.test(url)) return 2; // 가장 작음
+  if (/\/resized_/.test(url)) return 1;
+  return 0; // 원본
+}
+
+/** 썸네일 주소에서 한 단계 큰 주소를 만들어 봅니다. */
+function upscaleCandidates(url: string): string[] {
+  const out = [url];
+  // .../thumb/thumb_resized_X.jpg → .../resized_X.jpg
+  const noThumb = url.replace(/\/thumb\/thumb_/, "/");
+  if (noThumb !== url) out.push(noThumb);
+  // .../resized_X.jpg → .../X.jpg
+  const noResized = noThumb.replace(/\/resized_/, "/");
+  if (noResized !== noThumb) out.push(noResized);
+  return out;
+}
+
+/** 큰 그림이 앞에 오도록 정리합니다(중복 제거 포함). */
+function rankBySize(urls: string[]): string[] {
+  const all = new Set<string>();
+  for (const u of urls) for (const c of upscaleCandidates(u)) all.add(c);
+  return [...all].sort((a, b) => sizeRank(a) - sizeRank(b));
+}
+
+/**
+ * 그 주소에 파일이 실제로 있는지 봅니다.
+ * HEAD 를 막아 둔 서버가 흔해서, 막히면 첫 1바이트만 GET 해서 다시 봅니다.
+ */
+async function imageExists(url: string): Promise<boolean> {
+  const attempt = async (init: RequestInit) => {
+    try {
+      const res = await fetch(url, {
+        ...init,
+        headers: { "User-Agent": UA, ...(init.headers ?? {}) },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      });
+      return res.ok ? true : res.status;
+    } catch {
+      return 0;
+    }
+  };
+
+  const head = await attempt({ method: "HEAD" });
+  if (head === true) return true;
+  // 405(허용 안 함)·403 처럼 HEAD 만 막힌 경우를 걸러내기 위해 한 번 더
+  const ranged = await attempt({ method: "GET", headers: { Range: "bytes=0-0" } });
+  return ranged === true;
+}
+
+/**
+ * 큰 것부터 차례로 열어보고, 실제로 있는 첫 번째를 씁니다.
+ *
+ * 썸네일 주소에서 이름을 깎아 더 큰 주소를 만들어내지만, 그 파일이 늘
+ * 있는 것은 아닙니다(이 CMS 는 resized_ 까지만 두는 경우가 많습니다).
+ * 확인하지 않고 고르면 깨진 그림이 올라갑니다.
+ *
+ * 확인이 전부 실패하면(연결 문제, HEAD·GET 모두 막힘) 깎아 만든 주소가 아니라
+ * 페이지에 실제로 적혀 있던 주소 중 가장 큰 것으로 돌아갑니다.
+ * 추측한 주소보다 눈으로 본 주소가 안전합니다.
+ */
+async function pickExistingImage(
+  ranked: string[],
+  observed: string[]
+): Promise<{ url?: string; checked: string[]; verified: boolean }> {
+  const checked: string[] = [];
+  for (const url of ranked.slice(0, 4)) {
+    const ok = await imageExists(url);
+    checked.push(`${ok ? "있음" : "없음"} ${url.split("/").pop()}`);
+    if (ok) return { url, checked, verified: true };
+  }
+
+  const fallback = [...observed].sort((a, b) => sizeRank(a) - sizeRank(b))[0];
+  checked.push("확인 실패 → 페이지에 있던 주소 사용");
+  return { url: fallback ?? ranked[0], checked, verified: false };
+}
+
+/**
+ * 같은 게시판을 가리키는 주소 변형들.
+ *
+ * 교회 홈페이지가 http 로만 열리는지, www 가 붙는지 확실하지 않습니다.
+ * 하나가 막히면 전부 실패하므로, 응답하는 주소를 찾을 때까지 순서대로 시도합니다.
+ */
+function boardUrlVariants(url: string): string[] {
+  const out = [url];
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    for (const scheme of ["https:", "http:"]) {
+      for (const h of [host, `www.${host}`]) {
+        const v = new URL(url);
+        v.protocol = scheme;
+        v.hostname = h;
+        const str = v.toString();
+        if (!out.includes(str)) out.push(str);
+      }
+    }
+  } catch {
+    // 주소 형태가 아니면 원래 것만 씁니다.
+  }
+  return out;
+}
+
 export async function fetchLatestBulletin(
-  boardUrl: string = DEFAULT_BOARD_URL
+  boardUrlInput: string = DEFAULT_BOARD_URL
 ): Promise<BulletinResult> {
+  let boardUrl = boardUrlInput;
   const steps: BulletinStep[] = [];
   const boardId = boardIdFrom(boardUrl);
   const push = (label: string, detail: string, ok: boolean) =>
     steps.push({ label, detail, ok });
 
   // ── 1. 목록 페이지 ──
-  const list = await fetchText(boardUrl);
+  // 주소 형태(http/https, www 유무)가 확실하지 않아 응답하는 것을 찾습니다.
+  const variants = boardUrlVariants(boardUrl);
+  const tried: string[] = [];
+  let list = { ok: false, status: 0, body: "" };
+  let usedUrl = boardUrl;
+
+  for (const candidate of variants) {
+    const res = await fetchText(candidate);
+    tried.push(`${res.status || "실패"} ${candidate}`);
+
+    // 제대로 된 목록 페이지로 보이면 그것으로 확정합니다.
+    if (res.ok && res.body.length > 500) {
+      list = res;
+      usedUrl = candidate;
+      break;
+    }
+    // 아직 쓸 만한 것이 없으면, 응답이라도 한 주소를 기억해 둡니다.
+    // 주소까지 함께 남겨야 상세 페이지를 같은 곳에서 찾습니다.
+    if (!list.ok) {
+      list = res;
+      if (res.ok) usedUrl = candidate;
+    }
+  }
+  boardUrl = usedUrl;
+
   push(
     "주보 목록 페이지 읽기",
-    `${boardUrl} → ${list.status || "연결 실패"}${
-      list.ok ? ` (${list.body.length.toLocaleString()}자)` : ` · ${list.body.slice(0, 200)}`
-    }`,
+    list.ok
+      ? `${usedUrl} → ${list.status} (${list.body.length.toLocaleString()}자)` +
+        (tried.length > 1 ? ` · 시도: ${tried.join(" / ")}` : "")
+      : `모두 실패 · 시도: ${tried.join(" / ")} · ${list.body.slice(0, 160)}`,
     list.ok
   );
 
@@ -269,21 +444,31 @@ export async function fetchLatestBulletin(
   const pool = scoped.length ? scoped : attachments;
   if (!postId && pool.length) postId = pool[0].postId;
 
-  // 원본이 있으면 원본을, 없으면 축소본을 씁니다.
-  const original = pool.find((a) => !/\/resized_/.test(a.url));
-  const imageUrl = (original ?? pool[0])?.url;
+  // 가장 큰 그림을 고릅니다.
+  const observed = pool.map((a) => a.url);
+  const ranked = rankBySize(observed);
+  const picked = await pickExistingImage(ranked, observed);
+  const imageUrl = picked.url;
   push(
     "주보 이미지 찾기",
-    pool.length
-      ? `${pool.length}개 발견 · 사용: ${imageUrl}`
+    ranked.length
+      ? `${pool.length}개 발견 → 큰 순서로 ${ranked.length}개 확인 (${picked.checked.join(", ")}) · 사용: ${imageUrl}`
       : "이미지를 찾지 못했습니다.",
-    pool.length > 0
+    ranked.length > 0
   );
 
   // ── 5. 본문 ──
-  const text = htmlToText(detailHtml);
+  const narrowed = narrowToContent(detailHtml);
+  const text = htmlToText(narrowed.html);
   const { content, matched } = extractNewsSection(text);
   const tidied = tidy(content);
+  push(
+    "본문 영역 좁히기",
+    narrowed.matched
+      ? "글 본문 상자를 찾아 메뉴·머리말을 걷어냈습니다."
+      : "본문 상자를 못 찾아 페이지 전체에서 정리했습니다.",
+    narrowed.matched
+  );
   push(
     "교회소식 부분 골라내기",
     matched
@@ -294,7 +479,7 @@ export async function fetchLatestBulletin(
 
   // ── 6. 게시해도 될 만큼 확실한가 ──
   const confident =
-    Boolean(imageUrl) && matched && tidied.length >= 40 && tidied.length <= 4000;
+    Boolean(imageUrl) && matched && tidied.length >= 40 && tidied.length <= 1500;
 
   const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const title = `${kstNow.getUTCFullYear()}년 ${kstNow.getUTCMonth() + 1}월 ${
@@ -309,7 +494,7 @@ export async function fetchLatestBulletin(
     imageUrl,
     sourceUrl,
     postId,
-    imageCandidates: pool.map((a) => a.url),
+    imageCandidates: ranked,
     steps,
     htmlSample: detailHtml.slice(0, 3000),
     message: confident

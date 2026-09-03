@@ -4,7 +4,7 @@ import { ChevronLeft, Megaphone, Pin, Trash2, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { NEWS_CATEGORIES, newsCategoryStyle } from "@/lib/news";
 import { formatDate } from "@/lib/utils";
-import { createNews, deleteNews } from "../actions";
+import { createNews, deleteNews, runWeeklyBulletin } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -71,14 +71,23 @@ export default async function AdminNewsPage({
               주보에서 교회소식 가져오기
             </p>
             <p className="text-sm text-primary-800 leading-relaxed">
-              교회 홈페이지의 이번 주 주보를 읽어 교회소식과 주보 이미지를 뽑아옵니다.
-              미리보기에서 확인한 뒤 등록하시므로, 확인 없이 올라가는 일은 없습니다.
+              <strong>매주 일요일 오전 7시</strong>에 이번 주 주보를 읽어 교회소식과
+              주보 이미지를 자동으로 올립니다. 읽어온 내용이 확실하지 않으면
+              올리지 않고 넘어가니, 그럴 때는 미리보기에서 확인하고 직접 올려 주세요.
+              같은 주보가 두 번 올라가지도 않습니다.
             </p>
           </div>
-          <Link href="/admin/news/preview" className="btn-primary text-sm py-2.5">
-            <FileText className="w-4 h-4" aria-hidden="true" />
-            주보 미리보기
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/news/preview" className="btn-secondary text-sm py-2.5">
+              <FileText className="w-4 h-4" aria-hidden="true" />
+              주보 미리보기
+            </Link>
+            <form action={runWeeklyBulletin}>
+              <button type="submit" className="btn-primary text-sm py-2.5">
+                지금 가져오기
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* 새 소식 작성 */}

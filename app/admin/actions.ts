@@ -11,6 +11,7 @@ import {
 import { prisma } from "@/lib/db";
 import { NEWS_CATEGORIES } from "@/lib/news";
 import { postDailyPrayer } from "@/lib/daily-prayer";
+import { postWeeklyBulletin } from "@/lib/weekly-bulletin";
 import { isAllowedImageHost } from "@/lib/news";
 
 /**
@@ -231,6 +232,19 @@ export async function runDailyPrayer() {
   revalidatePath("/admin/prayers");
   redirect(
     "/admin/prayers?" +
+      (result.ok ? "ok=" : "error=") + encodeURIComponent(result.message)
+  );
+}
+
+
+/** 이번 주 주보를 지금 바로 가져와 올립니다 (평소에는 일요일 아침 배치가 합니다). */
+export async function runWeeklyBulletin() {
+  const result = await postWeeklyBulletin();
+  revalidatePath("/news");
+  revalidatePath("/admin/news");
+  revalidatePath("/");
+  redirect(
+    "/admin/news?" +
       (result.ok ? "ok=" : "error=") + encodeURIComponent(result.message)
   );
 }

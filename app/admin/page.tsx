@@ -7,19 +7,63 @@ import DailySyncButton from "@/components/admin/DailySyncButton";
 
 export const dynamic = "force-dynamic";
 
-/** 기도의 벽·평안소식 표가 이미 만들어져 있는지 확인합니다. */
+/**
+ * 기도의 벽·평안소식이 쓸 준비가 되었는지 확인합니다.
+ *
+ * 표가 있는지만 보면 안 됩니다. count() 는 컬럼을 조회하지 않아서
+ * 나중에 추가된 칸(isOfficial 등)이 없어도 성공합니다. 그러면 "준비 완료"로
+ * 보여 버튼이 숨겨지는데, 정작 목록을 읽는 findMany() 는 실패합니다.
+ * 그래서 필요한 칸이 실제로 있는지 데이터베이스에 직접 물어봅니다.
+ */
+const REQUIRED_COLUMNS: Record<string, string[]> = {
+  PrayerRequest: ["id", "author", "category", "content", "prayCount", "status", "isOfficial", "createdAt"],
+  News: ["id", "title", "content", "category", "isPinned", "imageUrl", "sourceUrl", "publishedAt"],
+};
+
 async function getTableStatus() {
-  // count() 가 성공하면 표가 있는 것이고, 실패하면 아직 없는 것입니다.
-  // 건수까지 함께 돌려주어 화면에서 "정말 준비됐는지"를 눈으로 확인할 수 있게 합니다.
-  const [prayer, news] = await Promise.all([
-    prisma.prayerRequest.count().then((n) => n).catch(() => null),
-    prisma.news.count().then((n) => n).catch(() => null),
-  ]);
-  return {
-    prayer,
-    news,
-    ready: prayer !== null && news !== null,
-  };
+  try {
+    const rows = await prisma.$queryRaw<{ table_name: string; column_name: string }[]>`
+      SELECT table_name, column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name IN ('PrayerRequest', 'News')
+    `;
+
+    const have: Record<string, Set<string>> = {
+      PrayerRequest: new Set(),
+      News: new Set(),
+    };
+    for (const r of rows) have[r.table_name]?.add(r.column_name);
+
+    const missing: string[] = [];
+    for (const [table, cols] of Object.entries(REQUIRED_COLUMNS)) {
+      if (have[table].size === 0) {
+        missing.push(`${table} (표 없음)`);
+        continue;
+      }
+      const lack = cols.filter((c) => !have[table].has(c));
+      if (lack.length) missing.push(`${table}.${lack.join(", ")}`);
+    }
+
+    // 건수는 표가 온전할 때만 의미가 있습니다.
+    const [prayer, news] = missing.length
+      ? [null, null]
+      : await Promise.all([
+          prisma.prayerRequest.count().catch(() => null),
+          prisma.news.count().catch(() => null),
+        ]);
+
+    return { prayer, news, missing, ready: missing.length === 0, checked: true };
+  } catch (error) {
+    console.error("getTableStatus error:", error);
+    return {
+      prayer: null,
+      news: null,
+      missing: ["확인 실패"],
+      ready: false,
+      checked: false,
+    };
+  }
 }
 
 async function getStats() {
@@ -148,11 +192,12 @@ export default async function AdminPage({
               <Database className="w-6 h-6 text-gold-700 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div className="flex-1">
                 <h2 className="font-bold text-gold-900 mb-1">
-                  기도의 벽 · 평안소식을 쓰려면 한 번만 눌러 주세요
+                  데이터베이스를 한 번만 맞춰 주세요
                 </h2>
                 <p className="text-sm text-gold-800 leading-relaxed mb-4">
-                  두 기능이 쓸 표를 데이터베이스에 만듭니다. 기존 설교·묵상·댓글은
+                  기도의 벽·평안소식이 쓸 표와 칸을 만듭니다. 기존 설교·묵상·댓글은
                   전혀 건드리지 않고, 여러 번 눌러도 안전합니다.
+                  기능이 추가되면 칸이 늘 수 있으니, 이 안내가 다시 보이면 또 눌러 주세요.
                 </p>
                 <form action={setupTables}>
                   <button
@@ -160,12 +205,11 @@ export default async function AdminPage({
                     className="inline-flex items-center gap-2 bg-gold-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-gold-700 transition-colors text-sm"
                   >
                     <Database className="w-4 h-4" aria-hidden="true" />
-                    표 만들기
+                    표·칸 만들기
                   </button>
                 </form>
                 <p className="text-xs text-gold-700 mt-3">
-                  현재 상태 · 기도의 벽 {tables.prayer !== null ? "준비됨" : "없음"} ·
-                  평안소식 {tables.news !== null ? "준비됨" : "없음"}
+                  모자란 것 · {tables.missing.join(" / ")}
                 </p>
               </div>
             </div>
