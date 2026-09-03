@@ -24,6 +24,7 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
   const [saved, setSaved] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateStatus, setGenerateStatus] = useState<"idle" | "success" | "error">("idle");
+  const [generateError, setGenerateError] = useState("");
   const [form, setForm] = useState({
     title: sermon.title,
     scripture: sermon.scripture || "",
@@ -35,15 +36,19 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
   const handleGenerate = async () => {
     setGenerating(true);
     setGenerateStatus("idle");
+    setGenerateError("");
 
     try {
       const response = await fetch(`/api/sermons/${sermon.id}/generate`, {
         method: "POST",
       });
 
-      if (!response.ok) throw new Error("생성 실패");
+      const data = await response.json().catch(() => null);
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || `생성 실패 (HTTP ${response.status})`);
+      }
+
       setForm((prev) => ({
         ...prev,
         scripture: data.scripture ?? prev.scripture,
@@ -52,9 +57,13 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
       }));
       setGenerateStatus("success");
       setTimeout(() => setGenerateStatus("idle"), 3000);
-    } catch {
+    } catch (err) {
       setGenerateStatus("error");
-      setTimeout(() => setGenerateStatus("idle"), 3000);
+      setGenerateError(err instanceof Error ? err.message : "생성 중 오류가 발생했습니다.");
+      setTimeout(() => {
+        setGenerateStatus("idle");
+        setGenerateError("");
+      }, 6000);
     } finally {
       setGenerating(false);
     }
@@ -134,8 +143,14 @@ export default function SermonEditForm({ sermon }: { sermon: Sermon }) {
       </div>
 
       {/* AI Generate */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500">AI를 사용해 요약과 해석을 자동으로 생성합니다.</span>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span className="text-sm text-gray-500">
+          {generateError ? (
+            <span className="text-red-600">{generateError}</span>
+          ) : (
+            "AI를 사용해 요약과 해석을 자동으로 생성합니다."
+          )}
+        </span>
         <button
           type="button"
           onClick={handleGenerate}
