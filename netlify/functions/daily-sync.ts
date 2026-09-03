@@ -117,6 +117,29 @@ interface YouTubeVideo {
   publishedAt: string;
 }
 
+/**
+ * 채널의 "업로드" 재생목록 ID를 가져옵니다.
+ *
+ * search.list 대신 이 방식을 쓰는 이유 (lib/youtube.ts 와 동일한 규칙):
+ *  - search.list 는 호출당 할당량 100유닛으로, playlistItems.list(1유닛)의
+ *    100배입니다.
+ *  - 더 중요하게, search.list 는 채널의 전체 영상을 안정적으로 다 돌려주지
+ *    못하는 색인 지연 문제가 실제로 있습니다. "동기화하면 몇 개만 들어온다"
+ *    증상의 원인이 이것이었습니다.
+ */
+async function getUploadsPlaylistId(apiKey: string, channelId: string): Promise<string> {
+  const params = new URLSearchParams({ part: "contentDetails", id: channelId, key: apiKey });
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?${params}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`channels.list 실패: ${err?.error?.errors?.[0]?.reason || res.status}`);
+  }
+  const data = await res.json();
+  const uploadsId = data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsId) throw new Error(`채널(${channelId})의 업로드 재생목록을 찾을 수 없습니다.`);
+  return uploadsId;
+}
+
 async function syncYouTube(): Promise<{ synced: number; newVideos: YouTubeVideo[] }> {
   const apiKey = process.env.YOUTUBE_API_KEY;
   const channelId = process.env.YOUTUBE_CHANNEL_ID || "UC9c1llukhxYQ5nma355O-kg";
@@ -126,43 +149,60 @@ async function syncYouTube(): Promise<{ synced: number; newVideos: YouTubeVideo[
     return { synced: 0, newVideos: [] };
   }
 
+  const uploadsPlaylistId = await getUploadsPlaylistId(apiKey, channelId);
+
   const allVideos: YouTubeVideo[] = [];
   let nextPageToken: string | undefined;
+  let pages = 0;
 
   do {
     const params = new URLSearchParams({
-      part: "snippet",
-      channelId,
+      part: "snippet,contentDetails",
+      playlistId: uploadsPlaylistId,
       maxResults: "50",
-      order: "date",
-      type: "video",
       key: apiKey,
     });
     if (nextPageToken) params.append("pageToken", nextPageToken);
 
-    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
-    if (!res.ok) break;
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${params}`);
+    if (!res.ok) {
+      // 이전엔 여기서 조용히 멈추고 지금까지 모은 것만 동기화했습니다 — 그게
+      // "몇 개만 동기화된다" 증상의 또 다른 원인이었습니다. 이제는 원인을
+      // 로그에 남겨 다음 실행 때 무슨 일이 있었는지 알 수 있게 합니다.
+      const err = await res.json().catch(() => ({}));
+      console.error(
+        `[daily-sync] playlistItems.list 실패 (page ${pages + 1}): ${err?.error?.errors?.[0]?.reason || res.status} — 지금까지 모은 ${allVideos.length}개로 계속 진행합니다.`
+      );
+      break;
+    }
 
     const data = await res.json();
-    const videos: YouTubeVideo[] = (data.items ?? []).map((item: {
-      id: { videoId: string };
-      snippet: {
-        title: string;
-        description: string;
-        thumbnails: { medium?: { url: string } };
-        publishedAt: string;
-      };
-    }) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      description: item.snippet.description,
-      thumbnail: item.snippet.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${item.id.videoId}/mqdefault.jpg`,
-      publishedAt: item.snippet.publishedAt,
-    }));
+    const videos: YouTubeVideo[] = (data.items ?? [])
+      .filter((item: { snippet?: { resourceId?: { videoId?: string } } }) => item.snippet?.resourceId?.videoId)
+      .map((item: {
+        snippet: {
+          resourceId: { videoId: string };
+          title: string;
+          description: string;
+          thumbnails: { medium?: { url: string } };
+          publishedAt: string;
+        };
+        contentDetails?: { videoPublishedAt?: string };
+      }) => ({
+        id: item.snippet.resourceId.videoId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnail: item.snippet.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/mqdefault.jpg`,
+        publishedAt: item.contentDetails?.videoPublishedAt || item.snippet.publishedAt,
+      }));
 
     allVideos.push(...videos);
     nextPageToken = data.nextPageToken;
-  } while (nextPageToken && allVideos.length < 500);
+    pages++;
+  } while (nextPageToken && allVideos.length < 2000 && pages < 41);
+
+  // 재생목록은 오래된 순서로 오는 경우가 많아 최신순으로 정렬합니다.
+  allVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
   // 신규 영상 찾기 (DB에 없는 것)
   const existingIds = new Set(
