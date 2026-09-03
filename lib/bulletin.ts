@@ -15,7 +15,7 @@
  */
 
 export const DEFAULT_BOARD_URL =
-  process.env.BULLETIN_BOARD_URL || "https://www.peacechurch.kr/Board/Index/46";
+  process.env.BULLETIN_BOARD_URL || "http://peacechurch.kr/Board/Index/46";
 
 /** 주보 이미지가 올라가는 곳 */
 const IMAGE_HOST = "data.dimode.co.kr";
@@ -292,21 +292,74 @@ async function pickExistingImage(
   return { url: ranked[0], checked };
 }
 
+
+/**
+ * 같은 게시판을 가리키는 주소 변형들.
+ *
+ * 교회 홈페이지가 http 로만 열리는지, www 가 붙는지 확실하지 않습니다.
+ * 하나가 막히면 전부 실패하므로, 응답하는 주소를 찾을 때까지 순서대로 시도합니다.
+ */
+function boardUrlVariants(url: string): string[] {
+  const out = [url];
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    for (const scheme of ["https:", "http:"]) {
+      for (const h of [host, `www.${host}`]) {
+        const v = new URL(url);
+        v.protocol = scheme;
+        v.hostname = h;
+        const str = v.toString();
+        if (!out.includes(str)) out.push(str);
+      }
+    }
+  } catch {
+    // 주소 형태가 아니면 원래 것만 씁니다.
+  }
+  return out;
+}
+
 export async function fetchLatestBulletin(
-  boardUrl: string = DEFAULT_BOARD_URL
+  boardUrlInput: string = DEFAULT_BOARD_URL
 ): Promise<BulletinResult> {
+  let boardUrl = boardUrlInput;
   const steps: BulletinStep[] = [];
   const boardId = boardIdFrom(boardUrl);
   const push = (label: string, detail: string, ok: boolean) =>
     steps.push({ label, detail, ok });
 
   // ── 1. 목록 페이지 ──
-  const list = await fetchText(boardUrl);
+  // 주소 형태(http/https, www 유무)가 확실하지 않아 응답하는 것을 찾습니다.
+  const variants = boardUrlVariants(boardUrl);
+  const tried: string[] = [];
+  let list = { ok: false, status: 0, body: "" };
+  let usedUrl = boardUrl;
+
+  for (const candidate of variants) {
+    const res = await fetchText(candidate);
+    tried.push(`${res.status || "실패"} ${candidate}`);
+
+    // 제대로 된 목록 페이지로 보이면 그것으로 확정합니다.
+    if (res.ok && res.body.length > 500) {
+      list = res;
+      usedUrl = candidate;
+      break;
+    }
+    // 아직 쓸 만한 것이 없으면, 응답이라도 한 주소를 기억해 둡니다.
+    // 주소까지 함께 남겨야 상세 페이지를 같은 곳에서 찾습니다.
+    if (!list.ok) {
+      list = res;
+      if (res.ok) usedUrl = candidate;
+    }
+  }
+  boardUrl = usedUrl;
+
   push(
     "주보 목록 페이지 읽기",
-    `${boardUrl} → ${list.status || "연결 실패"}${
-      list.ok ? ` (${list.body.length.toLocaleString()}자)` : ` · ${list.body.slice(0, 200)}`
-    }`,
+    list.ok
+      ? `${usedUrl} → ${list.status} (${list.body.length.toLocaleString()}자)` +
+        (tried.length > 1 ? ` · 시도: ${tried.join(" / ")}` : "")
+      : `모두 실패 · 시도: ${tried.join(" / ")} · ${list.body.slice(0, 160)}`,
     list.ok
   );
 
