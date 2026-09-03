@@ -67,3 +67,37 @@ model DonationInfo {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
+
+/// 기도의 벽 — 성도들이 서로의 기도제목을 나누고 함께 중보하는 공간
+/// "너희가 짐을 서로 지라 그리하여 그리스도의 법을 성취하라" (갈 6:2)
+model PrayerRequest {
+  id          String   @id @default(cuid())
+  author      String   @default("익명")
+  category    String   @default("기타")
+  content     String
+  prayCount   Int      @default(0)
+  status      String   @default("published") // published | hidden
+  /// 교회가 배치로 올린 공동 기도제목인지 (성도가 올린 글과 구분)
+  isOfficial  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+/// 평안소식 — 주보 공지, 교회 행사, 선교 소식
+model News {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String   @default("교회소식") // 교회소식 | 행사 | 선교 | 광고
+  isPinned    Boolean  @default(false)
+  /// 주보 이미지 주소 (주간 배치가 채웁니다)
+  imageUrl    String?
+  /// 원본 주보 글 주소
+  sourceUrl   String?
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([publishedAt])
+}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import MobileTabBar from "@/components/MobileTabBar";
 import { OrganizationSchema } from "@/components/JsonLd";
 
 const rawUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peacechurch.kr";
@@ -122,11 +123,20 @@ export default function RootLayout({
         <OrganizationSchema />
       </head>
       <body className="min-h-screen flex flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:bg-primary-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg"
+        >
+          본문 바로가기
+        </a>
         <Header />
         <main className="flex-1" id="main-content">
           {children}
         </main>
         <Footer />
+        {/* 모바일 하단 탭바에 푸터가 가려지지 않도록 여백을 둡니다 */}
+        <div className="lg:hidden h-[68px]" aria-hidden="true" />
+        <MobileTabBar />
       </body>
     </html>
   );

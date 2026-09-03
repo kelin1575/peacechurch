@@ -6,6 +6,8 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    /* 본문 폭 — 성경 조판처럼 한 줄이 너무 길어지지 않게 */
+    --measure: 68ch;
   }
 
   * {
@@ -14,11 +16,32 @@
 
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    font-family: "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold leading-tight;
+    word-break: keep-all;
+  }
+
+  /* 키보드 사용자에게만 보이는 또렷한 포커스 링 */
+  :focus-visible {
+    outline: 2px solid #1a6bba;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -35,15 +58,24 @@
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
   }
 
+  /* 금빛 버튼: 어두운 남색 배경 위에서도 흰 배경 위에서도 대비를 확보하도록
+     밝은 금빛 바탕 + 짙은 남색 글자로 조합했습니다. */
   .btn-gold {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-gold-500 text-white font-semibold rounded-lg
-           hover:bg-gold-600 active:bg-gold-700 transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-gold-300 text-primary-950 font-bold rounded-lg
+           hover:bg-gold-200 active:bg-gold-400 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-gold-200 focus:ring-offset-2 focus:ring-offset-primary-900;
+  }
+
+  /* 어두운 배경 위의 보조 버튼 */
+  .btn-ghost-light {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold rounded-lg
+           border border-white/30 backdrop-blur-sm hover:bg-white/20 active:bg-white/25
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/60;
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden
-           hover:shadow-md transition-shadow duration-200;
+    @apply bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden
+           hover:shadow-lift transition-shadow duration-200;
   }
 
   .section-title {
@@ -52,6 +84,11 @@
 
   .section-subtitle {
     @apply text-base text-gray-500 mt-2;
+  }
+
+  /* 섹션 머리말: 작은 라벨 + 큰 제목 (대형교회 사이트의 공통 리듬) */
+  .eyebrow {
+    @apply text-xs font-semibold tracking-[0.18em] uppercase text-primary-600;
   }
 
   .input-field {
@@ -65,11 +102,25 @@
            placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500
            focus:border-transparent transition-all duration-200 resize-none;
   }
+
+  /* 성경 구절 인용 — 명조체로 조판해 말씀의 무게를 살립니다 */
+  .scripture {
+    @apply font-serif leading-loose text-balance;
+  }
+
+  /* 본문 컨테이너 */
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .measure {
+    max-width: var(--measure);
   }
 
   .scrollbar-hide {
@@ -79,6 +130,11 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* 모바일 하단 탭바에 가려지지 않도록 페이지 하단 여백 확보 */
+  .pb-safe-tabbar {
+    padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -91,9 +147,10 @@
   @apply text-xs text-primary-600 font-semibold mr-1;
 }
 
-/* Smooth scrolling */
+/* Smooth scrolling — 상단 고정 헤더 높이만큼 앵커 여백 */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 84px;
 }
 
 /* Custom scrollbar */
@@ -106,10 +163,16 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c5cae9;
+  background: #c6dbf1;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #7986cb;
+  background: #6ba2d6;
+}
+
+/* 본문 선택 색 */
+::selection {
+  background: #dcc074;
+  color: #0d2a5e;
 }

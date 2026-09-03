@@ -1,10 +1,26 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { LayoutDashboard, BookOpen, MessageSquare, Youtube, Calendar, Plus, List } from "lucide-react";
+import { LayoutDashboard, BookOpen, MessageSquare, Youtube, Calendar, Plus, List, HeartHandshake, Megaphone, LogOut, Database, CheckCircle2, AlertTriangle } from "lucide-react";
 import YoutubeSyncButton from "@/components/admin/YoutubeSyncButton";
+import { logout, setupTables } from "./actions";
 import DailySyncButton from "@/components/admin/DailySyncButton";
 
 export const dynamic = "force-dynamic";
+
+/** 기도의 벽·평안소식 표가 이미 만들어져 있는지 확인합니다. */
+async function getTableStatus() {
+  // count() 가 성공하면 표가 있는 것이고, 실패하면 아직 없는 것입니다.
+  // 건수까지 함께 돌려주어 화면에서 "정말 준비됐는지"를 눈으로 확인할 수 있게 합니다.
+  const [prayer, news] = await Promise.all([
+    prisma.prayerRequest.count().then((n) => n).catch(() => null),
+    prisma.news.count().then((n) => n).catch(() => null),
+  ]);
+  return {
+    prayer,
+    news,
+    ready: prayer !== null && news !== null,
+  };
+}
 
 async function getStats() {
   try {
@@ -49,12 +65,19 @@ function formatDateShort(d: Date) {
   }).format(d);
 }
 
-export default async function AdminPage() {
-  const [stats, recentSermons, recentDevotionals] = await Promise.all([
-    getStats(),
-    getRecentSermons(),
-    getRecentDevotionals(),
-  ]);
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dbOk?: string; dbError?: string }>;
+}) {
+  const [stats, recentSermons, recentDevotionals, tables, params] =
+    await Promise.all([
+      getStats(),
+      getRecentSermons(),
+      getRecentDevotionals(),
+      getTableStatus(),
+      searchParams,
+    ]);
 
   const debugSecret = process.env.DEBUG_SECRET || "";
 
@@ -63,17 +86,92 @@ export default async function AdminPage() {
       {/* Header */}
       <div className="bg-primary-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <LayoutDashboard className="w-8 h-8 text-primary-300" />
-            <div>
-              <h1 className="text-2xl font-bold">관리자 대시보드</h1>
-              <p className="text-primary-300 text-sm">수원평안교회 콘텐츠 관리</p>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <LayoutDashboard className="w-8 h-8 text-primary-300" />
+              <div>
+                <h1 className="text-2xl font-bold">관리자 대시보드</h1>
+                <p className="text-primary-300 text-sm">수원평안교회 콘텐츠 관리</p>
+              </div>
             </div>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 text-sm text-primary-200 hover:text-white border border-white/25 hover:border-white/50 rounded-lg px-3.5 py-2 transition-colors"
+              >
+                <LogOut className="w-4 h-4" aria-hidden="true" />
+                로그아웃
+              </button>
+            </form>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* 데이터베이스 준비 */}
+        {params.dbOk && (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-olive-200 bg-olive-50 p-4 text-sm text-olive-800">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              표를 만들었습니다. 이제 <strong>기도의 벽</strong>과{" "}
+              <strong>평안소식</strong>을 쓰실 수 있습니다.
+            </p>
+          </div>
+        )}
+
+        {params.dbError && (
+          <div role="alert" className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <p className="font-semibold mb-1">표를 만들지 못했습니다.</p>
+              <p className="break-all">{params.dbError}</p>
+            </div>
+          </div>
+        )}
+
+        {tables.ready && (
+          <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-olive-200 bg-olive-50 px-5 py-3.5 text-sm text-olive-800">
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+              데이터베이스 준비 완료
+            </span>
+            <span>기도의 벽 · 기도제목 {tables.prayer}건</span>
+            <span>평안소식 · 소식 {tables.news}건</span>
+            <span className="text-olive-600">더 하실 일은 없습니다.</span>
+          </div>
+        )}
+
+        {!tables.ready && (
+          <div className="mb-8 rounded-xl border-2 border-gold-200 bg-gold-50 p-5">
+            <div className="flex items-start gap-3">
+              <Database className="w-6 h-6 text-gold-700 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="flex-1">
+                <h2 className="font-bold text-gold-900 mb-1">
+                  기도의 벽 · 평안소식을 쓰려면 한 번만 눌러 주세요
+                </h2>
+                <p className="text-sm text-gold-800 leading-relaxed mb-4">
+                  두 기능이 쓸 표를 데이터베이스에 만듭니다. 기존 설교·묵상·댓글은
+                  전혀 건드리지 않고, 여러 번 눌러도 안전합니다.
+                </p>
+                <form action={setupTables}>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 bg-gold-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-gold-700 transition-colors text-sm"
+                  >
+                    <Database className="w-4 h-4" aria-hidden="true" />
+                    표 만들기
+                  </button>
+                </form>
+                <p className="text-xs text-gold-700 mt-3">
+                  현재 상태 · 기도의 벽 {tables.prayer !== null ? "준비됨" : "없음"} ·
+                  평안소식 {tables.news !== null ? "준비됨" : "없음"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {[
@@ -117,6 +215,22 @@ export default async function AdminPage() {
               >
                 <List className="w-5 h-5" />
                 묵상 목록 관리
+              </Link>
+
+              <Link
+                href="/admin/prayers"
+                className="w-full flex items-center gap-3 p-3 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors text-sm font-medium"
+              >
+                <HeartHandshake className="w-5 h-5" />
+                기도의 벽 관리
+              </Link>
+
+              <Link
+                href="/admin/news"
+                className="w-full flex items-center gap-3 p-3 bg-gold-50 text-gold-700 rounded-lg hover:bg-gold-100 transition-colors text-sm font-medium"
+              >
+                <Megaphone className="w-5 h-5" />
+                평안소식 관리
               </Link>
 
               <Link

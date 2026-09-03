@@ -13,6 +13,7 @@ const navItems = [
     href: "/about",
     children: [
       { label: "교회 소개", href: "/about" },
+      { label: "처음 오신 분", href: "/visit" },
       { label: "자주 묻는 질문", href: "/faq" },
     ],
   },
@@ -37,8 +38,9 @@ const navItems = [
   },
   {
     label: "섬김",
-    href: "/donate",
+    href: "/prayer",
     children: [
+      { label: "기도의 벽", href: "/prayer" },
       { label: "후원하기", href: "/donate" },
     ],
   },
@@ -53,11 +55,11 @@ const navItems = [
   },
   {
     label: "평안소식",
-    href: "/faq",
+    href: "/news",
   },
   {
     label: "새가족등록",
-    href: "/about#contact",
+    href: "/visit",
   },
 ];
 
@@ -138,8 +140,11 @@ export default function Header() {
 
           {/* Right: 로그인/회원가입 style links */}
           <div className="hidden lg:flex items-center gap-3 text-sm text-gray-500">
-            <Link href="/about#contact" className="hover:text-[#1a6bba] transition-colors">
-              새가족등록
+            <Link
+              href="/visit"
+              className="inline-flex items-center gap-1.5 bg-primary-700 text-white font-semibold px-3.5 py-1.5 rounded-md hover:bg-primary-800 transition-colors"
+            >
+              처음 오셨나요?
             </Link>
             <span className="text-gray-300">|</span>
             <a
