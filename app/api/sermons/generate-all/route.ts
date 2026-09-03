@@ -4,6 +4,14 @@ import { prisma } from "@/lib/db";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Vercel 함수 최대 실행 시간. 20개를 한 번에 처리하려 하면 이 시간을 넘겨
+// 함수가 강제 종료되고, 그때까지 처리된 것만 저장된 채 "몇 개만 등록된다"는
+// 증상으로 나타납니다. 대신 아래 TIME_BUDGET_MS로 여유를 두고 스스로 멈춥니다.
+export const maxDuration = 60;
+
+const TIME_BUDGET_MS = 50_000;
+const MISSING_SUMMARY = { OR: [{ summary: null }, { summary: "" }] };
+
 // 설교 하나의 요약+해석 생성
 async function generateForSermon(sermon: {
   id: string;
@@ -67,11 +75,12 @@ export async function POST() {
     );
   }
 
-  // 요약/해석이 없는 설교만 대상
+  const startedAt = Date.now();
+
+  // 요약/해석이 없는 설교만 대상. 넉넉히 뽑아두고, 실제로는 시간 예산 안에서
+  // 처리할 수 있는 만큼만 생성합니다 — 나머지는 다음 호출(재호출)에서 이어서 처리됩니다.
   const sermons = await prisma.sermon.findMany({
-    where: {
-      OR: [{ summary: null }, { summary: "" }],
-    },
+    where: MISSING_SUMMARY,
     select: {
       id: true,
       title: true,
@@ -81,17 +90,19 @@ export async function POST() {
       category: true,
     },
     orderBy: { publishedAt: "desc" },
-    take: 20, // 한 번에 최대 20개 (API 비용 절감)
+    take: 50,
   });
 
   if (sermons.length === 0) {
-    return NextResponse.json({ message: "요약할 설교가 없습니다.", processed: 0 });
+    return NextResponse.json({ message: "요약할 설교가 없습니다.", processed: 0, remaining: 0 });
   }
 
   const results = { success: 0, failed: 0, errors: [] as string[] };
+  let processed = 0;
 
-  // 순차 처리 (API rate limit 방지)
   for (const sermon of sermons) {
+    if (Date.now() - startedAt > TIME_BUDGET_MS) break;
+    processed++;
     try {
       const generated = await generateForSermon(sermon);
       await prisma.sermon.update({
@@ -109,10 +120,13 @@ export async function POST() {
     }
   }
 
+  const remaining = await prisma.sermon.count({ where: MISSING_SUMMARY });
+
   return NextResponse.json({
-    processed: sermons.length,
+    processed,
     success: results.success,
     failed: results.failed,
     errors: results.errors,
+    remaining,
   });
 }

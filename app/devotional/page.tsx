@@ -289,9 +289,17 @@ export default async function DevotionalPage({
 
               {/* Recent devotionals */}
               <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="w-5 h-5 text-olive-600" aria-hidden="true" />
-                  <h3 className="font-semibold text-gray-900">최근 묵상</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-olive-600" aria-hidden="true" />
+                    <h3 className="font-semibold text-gray-900">최근 묵상</h3>
+                  </div>
+                  <Link
+                    href="/devotional/archive"
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    전체 보기 →
+                  </Link>
                 </div>
                 {recentDevotionals.length > 0 ? (
                   <ul className="space-y-1" role="list">
