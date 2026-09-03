@@ -13,16 +13,18 @@ export async function GET(request: NextRequest) {
 
   try {
     const maxResults = parseInt(searchParams.get("maxResults") || "20");
-    const pageToken = searchParams.get("pageToken") || undefined;
-    const { videos, nextPageToken } = await fetchChannelVideos(maxResults, pageToken);
-    return NextResponse.json({ videos, nextPageToken });
+    const { videos } = await fetchChannelVideos(maxResults);
+    return NextResponse.json({ videos });
   } catch (error) {
     console.error("YouTube fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch videos" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch videos" },
+      { status: 500 }
+    );
   }
 }
 
-// YouTube API 원시 응답 디버그
+// YouTube API 원시 응답 디버그 — 업로드 재생목록 조회 단계를 그대로 보여줍니다.
 async function debugYouTubeApi() {
   const apiKey = process.env.YOUTUBE_API_KEY;
   const channelId = process.env.YOUTUBE_CHANNEL_ID || "UC9c1llukhxYQ5nma355O-kg";
@@ -31,19 +33,39 @@ async function debugYouTubeApi() {
     return NextResponse.json({ status: "mock_mode", channelId });
   }
 
-  const params = new URLSearchParams({
-    part: "snippet", channelId, maxResults: "5",
-    order: "date", type: "video", key: apiKey,
-  });
   try {
-    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
-    const data = await res.json();
+    // 1) 채널 → 업로드 재생목록 ID
+    const chParams = new URLSearchParams({ part: "contentDetails", id: channelId, key: apiKey });
+    const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?${chParams}`);
+    const chData = await chRes.json();
+    const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+
+    if (!chRes.ok || !uploadsId) {
+      return NextResponse.json({
+        status: "error",
+        step: "channels.list",
+        httpStatus: chRes.status,
+        channelId,
+        apiKeyPrefix: apiKey.slice(0, 8) + "...",
+        youtubeResponse: chData,
+      });
+    }
+
+    // 2) 업로드 재생목록 첫 페이지 (최대 5개)
+    const plParams = new URLSearchParams({
+      part: "snippet,contentDetails", playlistId: uploadsId, maxResults: "5", key: apiKey,
+    });
+    const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${plParams}`);
+    const plData = await plRes.json();
+
     return NextResponse.json({
-      status: res.ok ? "ok" : "error",
-      httpStatus: res.status,
+      status: plRes.ok ? "ok" : "error",
+      step: "playlistItems.list",
+      httpStatus: plRes.status,
       channelId,
+      uploadsPlaylistId: uploadsId,
       apiKeyPrefix: apiKey.slice(0, 8) + "...",
-      youtubeResponse: data,
+      youtubeResponse: plData,
     });
   } catch (e) {
     return NextResponse.json({ status: "fetch_failed", error: String(e) });
