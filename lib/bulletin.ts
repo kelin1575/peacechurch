@@ -336,16 +336,37 @@ function boardUrlVariants(url: string): string[] {
   return out;
 }
 
-export async function fetchLatestBulletin(
-  boardUrlInput: string = DEFAULT_BOARD_URL
-): Promise<BulletinResult> {
-  let boardUrl = boardUrlInput;
-  const steps: BulletinStep[] = [];
-  const boardId = boardIdFrom(boardUrl);
-  const push = (label: string, detail: string, ok: boolean) =>
-    steps.push({ label, detail, ok });
+/**
+ * 사람이 붙여넣는 다양한 형태(전체 URL, 이미지 주소, 맨 글 번호)에서
+ * 게시글 번호를 뽑아냅니다. 예)
+ *   ".../Board/Viewer?path=http://.../files/46/22445/resized_....jpg" → "22445"
+ *   ".../Board/View/46/22445" → "22445"
+ *   "22445" → "22445"
+ */
+export function extractPostId(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (/^\d{3,}$/.test(trimmed)) return trimmed;
 
-  // ── 1. 목록 페이지 ──
+  let m = trimmed.match(/\/files\/\d+\/(\d+)\//);
+  if (m) return m[1];
+
+  m = trimmed.match(/\/Board\/\w+\/\d+\/(\d+)/);
+  if (m) return m[1];
+
+  m = trimmed.match(/[?&](?:idx|bidx|no|seq|id)=(\d+)/);
+  if (m) return m[1];
+
+  return null;
+}
+
+/** 목록 페이지에서 최신 글 번호를 찾아 상세 페이지를 엽니다. */
+async function findLatestDetail(
+  boardUrl: string,
+  boardId: string,
+  push: (label: string, detail: string, ok: boolean) => void
+): Promise<{ detailHtml: string; sourceUrl: string; postId?: string; boardUrl: string; listBody: string }> {
+  // ── 목록 페이지 ──
   // 주소 형태(http/https, www 유무)가 확실하지 않아 응답하는 것을 찾습니다.
   const variants = boardUrlVariants(boardUrl);
   const tried: string[] = [];
@@ -381,17 +402,10 @@ export async function fetchLatestBulletin(
   );
 
   if (!list.ok) {
-    return {
-      ok: false,
-      confident: false,
-      imageCandidates: [],
-      steps,
-      message:
-        "주보 목록 페이지를 읽지 못했습니다. 주소가 바뀌었거나 사이트가 응답하지 않습니다.",
-    };
+    return { detailHtml: "", sourceUrl: boardUrl, boardUrl, listBody: "" };
   }
 
-  // ── 2. 최신 글 번호 ──
+  // ── 최신 글 번호 ──
   const postIds = findPostIds(list.body, boardId);
   push(
     "최신 주보 글 번호 찾기",
@@ -403,10 +417,10 @@ export async function fetchLatestBulletin(
     postIds.length > 0
   );
 
-  // ── 3. 상세 페이지 ──
+  // ── 상세 페이지 ──
   let detailHtml = "";
   let sourceUrl = boardUrl;
-  let postId = postIds[0];
+  const postId = postIds[0];
 
   if (postId) {
     for (const candidate of detailUrlCandidates(boardUrl, boardId, postId)) {
@@ -434,6 +448,95 @@ export async function fetchLatestBulletin(
       "상세 페이지를 열지 못해 목록 페이지 내용으로 대신합니다.",
       false
     );
+  }
+
+  return { detailHtml, sourceUrl, postId, boardUrl, listBody: list.body };
+}
+
+/** 지정한 글 번호로 곧바로 상세 페이지를 찾습니다 (목록 페이지를 거치지 않음). */
+async function findDetailByPostId(
+  boardUrl: string,
+  boardId: string,
+  postId: string,
+  push: (label: string, detail: string, ok: boolean) => void
+): Promise<{ detailHtml: string; sourceUrl: string; boardUrl: string }> {
+  const variants = boardUrlVariants(boardUrl);
+  const tried: string[] = [];
+  let detailHtml = "";
+  let sourceUrl = boardUrl;
+  let usedBoardUrl = boardUrl;
+
+  outer: for (const variant of variants) {
+    for (const candidate of detailUrlCandidates(variant, boardId, postId)) {
+      const res = await fetchText(candidate);
+      tried.push(`${res.status || "실패"} ${candidate}`);
+      const hasAttachment = res.ok && res.body.includes(`/files/${boardId}/${postId}/`);
+      if (res.ok && (hasAttachment || res.body.length > 3000)) {
+        detailHtml = res.body;
+        sourceUrl = candidate;
+        usedBoardUrl = variant;
+        break outer;
+      }
+    }
+  }
+
+  push(
+    "지정한 글 번호로 상세 페이지 읽기",
+    detailHtml
+      ? `${sourceUrl} → 확인됨` + (tried.length > 1 ? ` · 시도: ${tried.join(" / ")}` : "")
+      : `모두 실패 · 시도: ${tried.join(" / ")}`,
+    Boolean(detailHtml)
+  );
+
+  return { detailHtml, sourceUrl, boardUrl: usedBoardUrl };
+}
+
+export async function fetchLatestBulletin(
+  boardUrlInput: string = DEFAULT_BOARD_URL,
+  postIdOverride?: string
+): Promise<BulletinResult> {
+  const boardUrl0 = boardUrlInput;
+  const steps: BulletinStep[] = [];
+  const boardId = boardIdFrom(boardUrl0);
+  const push = (label: string, detail: string, ok: boolean) =>
+    steps.push({ label, detail, ok });
+
+  let detailHtml: string;
+  let sourceUrl: string;
+  let postId: string | undefined;
+
+  if (postIdOverride) {
+    const found = await findDetailByPostId(boardUrl0, boardId, postIdOverride, push);
+    detailHtml = found.detailHtml;
+    sourceUrl = found.sourceUrl;
+    postId = postIdOverride;
+
+    if (!detailHtml) {
+      return {
+        ok: false,
+        confident: false,
+        postId,
+        imageCandidates: [],
+        steps,
+        message: `글 번호 ${postId}에 해당하는 주보 페이지를 찾지 못했습니다. 주소나 글 번호를 다시 확인해 주세요.`,
+      };
+    }
+  } else {
+    const found = await findLatestDetail(boardUrl0, boardId, push);
+    detailHtml = found.detailHtml;
+    sourceUrl = found.sourceUrl;
+    postId = found.postId;
+
+    if (!found.listBody) {
+      return {
+        ok: false,
+        confident: false,
+        imageCandidates: [],
+        steps,
+        message:
+          "주보 목록 페이지를 읽지 못했습니다. 주소가 바뀌었거나 사이트가 응답하지 않습니다.",
+      };
+    }
   }
 
   // ── 4. 이미지 ──

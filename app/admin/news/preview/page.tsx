@@ -7,7 +7,7 @@ import {
   FileText,
   RefreshCw,
 } from "lucide-react";
-import { fetchLatestBulletin, DEFAULT_BOARD_URL } from "@/lib/bulletin";
+import { fetchLatestBulletin, extractPostId, DEFAULT_BOARD_URL } from "@/lib/bulletin";
 import { createNews } from "../../actions";
 import { NEWS_CATEGORIES } from "@/lib/news";
 
@@ -26,11 +26,13 @@ export const dynamic = "force-dynamic";
 export default async function BulletinPreviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ url?: string }>;
+  searchParams: Promise<{ url?: string; post?: string }>;
 }) {
   const params = await searchParams;
   const boardUrl = params.url?.startsWith("http") ? params.url : DEFAULT_BOARD_URL;
-  const result = await fetchLatestBulletin(boardUrl);
+  const postIdOverride = params.post ? extractPostId(params.post) ?? undefined : undefined;
+  const postNotRecognized = Boolean(params.post) && !postIdOverride;
+  const result = await fetchLatestBulletin(boardUrl, postIdOverride);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,9 +50,49 @@ export default async function BulletinPreviewPage({
           <h1 className="text-2xl font-bold text-gray-900">주보 미리보기</h1>
         </div>
         <p className="text-sm text-gray-500 mb-6">
-          교회 홈페이지에서 이번 주 주보를 읽어봤습니다.{" "}
+          {postIdOverride
+            ? `글 번호 ${postIdOverride}를 지정해서 읽어봤습니다.`
+            : "교회 홈페이지에서 이번 주(가장 최근) 주보를 읽어봤습니다."}{" "}
           <strong className="text-gray-700">이 화면에서는 아무것도 저장하지 않습니다.</strong>
         </p>
+
+        {/* 특정 글 지정해서 가져오기 */}
+        <form
+          method="get"
+          className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4"
+        >
+          <div className="flex-1 min-w-[240px]">
+            <label htmlFor="post-input" className="block text-sm font-medium text-gray-700 mb-1.5">
+              특정 주보 글 지정해서 가져오기 <span className="text-gray-400 font-normal">(선택)</span>
+            </label>
+            <input
+              id="post-input"
+              name="post"
+              type="text"
+              defaultValue={params.post ?? ""}
+              placeholder="글 주소 전체를 붙여넣거나 글 번호(예: 22445)만 입력"
+              className="input-field text-sm"
+            />
+          </div>
+          <button type="submit" className="btn-secondary text-sm py-2.5">
+            이 글로 가져오기
+          </button>
+          {params.post && (
+            <Link href="/admin/news/preview" className="text-xs text-gray-400 hover:text-gray-600 pb-3">
+              최신 글로 되돌리기
+            </Link>
+          )}
+        </form>
+
+        {postNotRecognized && (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-gold-200 bg-gold-50 p-4 text-sm text-gold-800">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              &ldquo;{params.post}&rdquo;에서 글 번호를 찾지 못해 최신 글을 대신 읽었습니다.
+              글 주소 전체를 붙여넣거나 숫자로 된 글 번호만 입력해 주세요.
+            </p>
+          </div>
+        )}
 
         {/* 판정 */}
         <div
@@ -203,7 +245,10 @@ export default async function BulletinPreviewPage({
               <button type="submit" className="btn-primary">
                 이대로 평안소식에 등록
               </button>
-              <Link href="/admin/news/preview" className="btn-secondary">
+              <Link
+                href={postIdOverride ? `/admin/news/preview?post=${postIdOverride}` : "/admin/news/preview"}
+                className="btn-secondary"
+              >
                 <RefreshCw className="w-4 h-4" aria-hidden="true" />
                 다시 읽기
               </Link>
