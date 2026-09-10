@@ -222,12 +222,19 @@ export default async function AdminPage({
             <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-gold-700" aria-hidden="true" />
             <div>
               <p className="font-bold text-gold-900 mb-1">
-                AI 자동 생성이 동작하지 않습니다
+                이 화면(Vercel)에는 AI 생성 키가 없습니다
               </p>
               <p className="leading-relaxed">
-                설교 요약/해석 자동 생성, 매일 묵상 자동 생성이 <code className="bg-white/60 px-1 rounded">ANTHROPIC_API_KEY</code>{" "}
+                설교 요약/해석 자동 생성이 <code className="bg-white/60 px-1 rounded">ANTHROPIC_API_KEY</code>{" "}
                 환경변수를 필요로 합니다. Vercel 대시보드 → 프로젝트 → Settings → Environment
                 Variables 에서 값을 추가하고 재배포하면 해결됩니다.
+              </p>
+              <p className="leading-relaxed mt-2 pt-2 border-t border-gold-200/60">
+                <strong>매일 자동 묵상 생성은 이것과 별개입니다.</strong> Netlify에서 예약
+                실행되며, Netlify는 Vercel과 환경변수를 따로 관리합니다. 이 배너가 없어도
+                묵상이 매일 새로 안 올라온다면, <strong>Netlify 대시보드 → Site
+                configuration → Environment variables</strong>에도 같은
+                ANTHROPIC_API_KEY가 있는지 꼭 확인해 주세요.
               </p>
             </div>
           </div>
