@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { ChevronLeft, Plus, Edit, Trash2, Calendar } from "lucide-react";
+import { ChevronLeft, Plus, Edit, Trash2, Calendar, AlertTriangle } from "lucide-react";
 import DeleteDevotionalButton from "@/components/admin/DeleteDevotionalButton";
+import BackfillDevotionalsButton from "@/components/admin/BackfillDevotionalsButton";
+import { findMissingDevotionalDates } from "@/lib/backfill-devotionals";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,14 @@ async function getDevotionals() {
   }
 }
 
+async function getMissingCount() {
+  try {
+    return (await findMissingDevotionalDates()).length;
+  } catch {
+    return 0;
+  }
+}
+
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric", month: "long", day: "numeric", weekday: "short",
@@ -23,7 +33,10 @@ function formatDate(d: Date) {
 }
 
 export default async function AdminDevotionalsPage() {
-  const devotionals = await getDevotionals();
+  const [devotionals, missingCount] = await Promise.all([
+    getDevotionals(),
+    getMissingCount(),
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,6 +64,25 @@ export default async function AdminDevotionalsPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {missingCount > 0 && (
+          <div className="mb-8 flex flex-wrap items-center gap-4 rounded-xl border-2 border-gold-200 bg-gold-50 p-5">
+            <AlertTriangle className="w-6 h-6 text-gold-700 flex-shrink-0" aria-hidden="true" />
+            <div className="flex-1 min-w-[240px]">
+              <p className="font-bold text-gold-900 mb-1">
+                최근 30일 중 {missingCount}일의 묵상이 비어 있습니다
+              </p>
+              <p className="text-sm text-gold-800 leading-relaxed">
+                매일 자동 생성 배치(Netlify)에 <code className="bg-white/60 px-1 rounded">ANTHROPIC_API_KEY</code>가
+                없어서 조용히 건너뛰었을 가능성이 높습니다. Netlify 대시보드 → Site
+                configuration → Environment variables 에서 확인해 주세요(Vercel과는
+                별개로 설정해야 합니다). 아래 버튼을 누르면 빠진 날짜의 묵상을 그때
+                시점에 가장 최근이었던 설교를 기준으로 지금 채워 넣습니다.
+              </p>
+            </div>
+            <BackfillDevotionalsButton missingCount={missingCount} />
+          </div>
+        )}
+
         {devotionals.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center text-gray-400 border border-gray-100">
             <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
