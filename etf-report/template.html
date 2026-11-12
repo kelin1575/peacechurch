@@ -71,6 +71,7 @@ td.cat{white-space:nowrap;font-size:12.5px}
 td.name .c{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;margin-left:4px;vertical-align:1px}
 .tag.lev{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.tag.liq{background:var(--chip);color:var(--muted);border:1px solid var(--line)}
 .tag.new{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
 .delta{font-size:11px;font-family:var(--mono);margin-left:4px}
 .bar{display:inline-block;height:6px;border-radius:3px;background:var(--accent);vertical-align:middle;margin-right:6px;opacity:.75}
@@ -156,7 +157,7 @@ details summary{cursor:pointer;color:var(--accent);font-size:14px}
 {{ANALYSIS}}
 
 <section class="foot">
-  <div>데이터: 네이버 금융 ETF 시세·분석 API (수익률은 시장가격 기준, 분배금 재투자 미반영일 수 있음). 장기점수는 보수·순자산·추적오차·운용기간·분산도·1년 실적을 합산한 내부 지표이며, 레버리지·인버스는 0점입니다.</div>
+  <div>데이터: 네이버 금융 ETF 시세·분석 API (수익률은 시장가격 기준, 분배금 재투자 미반영일 수 있음). 장기점수(100점)는 3인 토론 합의 기준입니다: 보수 20, 순자산 15, 추적오차 10, 운용이력 10, 분산도 20, 6개월 추세 15, 3년 실적 10, 고분배·마이너스 총수익 -10. 레버리지·인버스는 0점입니다. '유동성 주의'는 순자산 500억 원 또는 전일 거래대금 50억 원 미만입니다.</div>
   <div>투자 권유가 아닌 정보 제공용 자료입니다. 투자 판단과 책임은 투자자 본인에게 있습니다.</div>
 </section>
 </div>
@@ -230,7 +231,7 @@ function renderTable(){
   const maxTv=Math.max(...items.map(i=>i.tradeValue||0));
   document.querySelector('#tbl tbody').innerHTML=rows.map(i=>`<tr>
     <td class="l num">${i._rank??''}${deltaHtml(i,sortK)}</td>
-    <td class="l name">${esc(i.name)}${i.leveraged?'<span class="tag lev">레버리지·인버스</span>':''}<br><span class="c">${i.code} · ${esc(i.issuer||'')}</span></td>
+    <td class="l name">${esc(i.name)}${i.leveraged?'<span class="tag lev">레버리지·인버스</span>':''}${i.illiquid?'<span class="tag liq">유동성 주의</span>':''}<br><span class="c">${i.code} · ${esc(i.issuer||'')}</span></td>
     <td class="l cat"><span class="sub">${esc(i.category)}</span></td>
     <td class="num">${fmtN(i.close)}</td><td class="num">${fmtVol(i.volume)}</td>
     <td class="num"><span class="bar" style="width:${Math.max(2,Math.round(40*(i.tradeValue||0)/maxTv))}px"></span>${fmtN(i.tradeValue)}</td>
